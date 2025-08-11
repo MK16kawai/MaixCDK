@@ -18,6 +18,7 @@
 #include <sys/select.h>
 #include <linux/spi/spidev.h>
 #include <errno.h>
+#include "maix_spi_port.hpp"
 
 namespace maix::peripheral::spi
 {
@@ -62,40 +63,42 @@ namespace maix::peripheral::spi
         return 0;
     }
 
-    SPI::SPI(int id, spi::Mode mode, int freq, int polarity, int phase,
-            int bits, unsigned char cs_enable, bool soft_cs, std::string cs, int hw_cs_id)
-                :_used_soft_cs(soft_cs), _cs_enable(cs_enable), _bits(bits), _freq(freq)
+    SPI::SPI(int id, spi::Mode mode, int freq, int polarity, int phase, int bits,
+            int hw_cs, std::string soft_cs,
+            bool cs_active_low)
+            :_bits(bits), _freq(freq)
     {
+        if (mode != spi::Mode::MASTER)
+            throw err::Exception(err::ERR_ARGS, "only spi::Mode::MASTER");
+        if ((polarity & ~0x01) | (phase & ~0x01))
+            throw err::Exception(err::ERR_ARGS, "spi polarity/phase value should be in 0/1");
+
+        if(!soft_cs.empty()) // use soft cs
         {
-            if (mode == spi::Mode::SLAVE)
-                throw err::Exception(err::ERR_ARGS, "spi::Mode::SLAVE mode not implemented");
-
-            uint32_t invalid_arguments = (
-                (mode & ~0x01) | (polarity & ~0x01) | (phase & ~0x01));
-            if (invalid_arguments)
-                throw err::Exception(err::ERR_ARGS, "spi args error");
-
-            if (soft_cs) {
-                auto pull = cs_enable ? gpio::Pull::PULL_DOWN : gpio::Pull::PULL_UP;
-                _cs = new gpio::GPIO(cs, gpio::Mode::OUT, pull);
-                if (nullptr == _cs)
-                    throw err::Exception(err::ERR_NO_MEM, "cannot alloc maix::peripheral::gpio");
-            } else if (cs_enable != 0) {
-                throw err::Exception(err::ERR_ARGS, "spi:switching the effective level of the default CS "
-                                "is not supported for the time being, if you need a CS pin with an "
-                                "effective level of high, please use the parameter 'cs' to select a "
-                                "GPIO as the CS pin.");
-            }
-
-            std::string dev_name("/dev/spidev"+std::to_string(id)+"."+std::to_string(hw_cs_id));
-            log::debug("try to open %s...", dev_name.c_str());
-            _fd = ::open(dev_name.c_str(), O_RDWR);
-            if (_fd < 0)
-                throw err::Exception(err::ERR_IO, "cannot open "+dev_name);
+            _used_soft_cs = true;
+            auto pull = cs_active_low ? gpio::Pull::PULL_DOWN : gpio::Pull::PULL_UP;
+            _cs = new gpio::GPIO(soft_cs, gpio::Mode::OUT, pull);
+            if (nullptr == _cs)
+                throw err::Exception(err::ERR_NO_MEM, "cannot alloc maix::peripheral::gpio");
         }
+        else
+        {
+            _used_soft_cs = false;
+            if(!cs_active_low)
+                throw err::Exception(err::ERR_ARGS, "hw_cs only support active low");
+        }
+        _cs_active_value = cs_active_low ? 0 : 1;
+        if(hw_cs < 0)
+            hw_cs = maix_spi_port_get_default_hw_cs(id);
+
+        std::string dev_name("/dev/spidev"+std::to_string(id)+"."+std::to_string(hw_cs));
+        log::debug("try to open %s...", dev_name.c_str());
+        _fd = ::open(dev_name.c_str(), O_RDWR);
+        if (_fd < 0)
+            throw err::Exception(err::ERR_IO, "cannot open "+dev_name);
 
         uint32_t d8 = ((polarity << 1)|(phase));
-        if (0 != cs_enable && !_used_soft_cs) {
+        if (!cs_active_low && !_used_soft_cs) {
             d8 |= SPI_CS_HIGH;
         }
 
@@ -242,8 +245,8 @@ namespace maix::peripheral::spi
     void SPI::enable_cs(bool enable)
     {
         if (enable)
-            _cs->value(_cs_enable);
+            _cs->value(_cs_active_value);
         else
-            _cs->value(!_cs_enable);
+            _cs->value(!_cs_active_value);
     }
 }; // namespace maix

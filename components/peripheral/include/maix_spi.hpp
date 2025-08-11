@@ -35,18 +35,21 @@ namespace maix::peripheral::spi
          *
          * @param[in] id spi bus id, int type
          * @param[in] mode mode of spi, spi.Mode type, spi.Mode.MASTER or spi.Mode.SLAVE.
-         * @param[in] freq freq of spi, int type
+         * @param[in] freq freq of spi, int type. Different board support different max freq, for MaixCAM2 is 26000000(26M).
          * @param[in] polarity polarity of spi, 0 means idle level of clock is low, 1 means high, int type, default is 0.
          * @param[in] phase phase of spi, 0 means data is captured on the first edge of the SPI clock cycle, 1 means second, int type, default is 0.
          * @param[in] bits bits of spi, int type, default is 8.
-         * @param[in] cs_enable cs pin active level, default is 0(low)
-         * @param[in] soft_cs not use hardware cs, bool type, if set true, you can operate cs pin use gpio manually.
-         * @param[in] cs soft cs pin number, std::string type, default is "GPIOA19", if SPI support multi hardware cs, you can set it to other value.
-         * @param[in] hw_cs_id hardware cs id, int type, default is 0, if SPI support multi hardware cs, you can set it to other value.
+         * @param[in] hw_cs use hardware CS id, -1 means use default(e.g. for MaixCAM2 SPI2 is CS1), 0 means use CS0, 1 means use CS1 ...
+         * @param[in] soft_cs use soft CS instead of hw_cs, default empty string means not use soft CS control, so you can use hw_cs or control CS pin by your self with GPIO module.
+         *                    if set GPIO name, for example GPIOA19(MaixCAM) or GPIO0_A2(MaixCAM2), this class will automatically init GPIO object and control soft CS pin when read/write.
+         *                    Attention, you should set GPIO's pinmap first by yourself first.
+         *                    Attention, the driver may still own the hw_cs pin and perform control hw_cs, you can use pinmap to map hw_cs pin to other function to avoid this.
+         * @param[in] cs_active_low CS pin low voltage means activate slave device, default true. hw_cs only support true, soft_cs support both.
          * @maixpy maix.peripheral.spi.SPI.__init__
          */
-        SPI(int id, spi::Mode mode, int freq, int polarity = 0, int phase = 0,
-            int bits = 8, unsigned char cs_enable=0, bool soft_cs = false, std::string cs = "GPIOA19", int hw_cs_id = 0);
+        SPI(int id, spi::Mode mode, int freq, int polarity = 0, int phase = 0, int bits = 8,
+                    int hw_cs = -1, std::string soft_cs = "",
+                    bool cs_active_low = true);
         ~SPI();
 
         /**
@@ -114,7 +117,7 @@ namespace maix::peripheral::spi
         int _fd = -1;
         bool _used_soft_cs = false;
         gpio::GPIO *_cs = nullptr;
-        unsigned char _cs_enable;
+        int _cs_active_value = 0;
 
         int _bits;
         int _freq;

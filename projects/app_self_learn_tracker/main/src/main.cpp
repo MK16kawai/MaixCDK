@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
     comm::add_default_comm_listener();
 
     // default key action
-    key::add_default_listener();
+    peripheral::key::add_default_listener();
 
     // Use CATCH_EXCEPTION_RUN_RETURN to catch exception,
     // if we don't catch exception, when program throw exception, the objects will not be destructed.
