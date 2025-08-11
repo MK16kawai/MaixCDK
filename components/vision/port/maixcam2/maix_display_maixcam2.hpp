@@ -384,10 +384,13 @@ namespace maix::display
                     this->_pool_size = stPoolCfg.BlkSize;
                 }
 
-                maixcam2::Frame *frame = new maixcam2::Frame(_pool_id, img.width(), img.height(), img.data(), img.data_size(), maixcam2::get_ax_fmt_from_maix(img.format()));
-                if (!frame) {
-                    log::error("Failed to create frame");
-                    return err::Err(err::ERR_RUNTIME);
+                maixcam2::Frame *frame = nullptr;
+                while (frame == nullptr && !app::need_exit()) {
+                    try {
+                        frame = new maixcam2::Frame(_pool_id, img.width(), img.height(), img.data(), img.data_size(), maixcam2::get_ax_fmt_from_maix(img.format()));
+                    } catch (...) {
+                        time::sleep_ms(5);
+                    }
                 }
 
                 switch (format)
