@@ -839,29 +839,18 @@ namespace maix::rtmp {
             if (has_audio && rtmp_client->is_opened()) {
                 int frame_size_per_second = rtmp_client->get_frame_size_per_second();
                 uint64_t loop_ms = 0;
-                int read_pcm_size = 0;
                 if (last_read_pcm_ms == 0) {
                     loop_ms = 30;
-                    read_pcm_size = frame_size_per_second * loop_ms * 1.5 / 1000;
                     audio_pts = 0;
                     last_read_pcm_ms = time::ticks_ms();
                 } else {
                     loop_ms = time::ticks_ms() - last_read_pcm_ms;
                     last_read_pcm_ms = time::ticks_ms();
-
-                    read_pcm_size = frame_size_per_second * loop_ms * 1.5 / 1000;
                     audio_pts += rtmp_client->ms_to_pts(rtmp_client->get_audio_timebase(), loop_ms);
                 }
 
-                auto remain_frame_count = audio_recorder->get_remaining_frames();
-                auto bytes_per_frame = audio_recorder->frame_size();
-                auto remain_frame_bytes = remain_frame_count * bytes_per_frame;
-                read_pcm_size = (read_pcm_size + 1023) & ~1023;
-                if (read_pcm_size > remain_frame_bytes) {
-                    read_pcm_size = remain_frame_bytes;
-                }
                 // log::info("pts:%d  pts %f s", audio_pts, rtmp_client->timebase_to_ms(rtmp_client->get_audio_timebase(), audio_pts) / 1000);
-                Bytes *pcm_data = audio_recorder->record_bytes(read_pcm_size);
+                Bytes *pcm_data = audio_recorder->record_bytes(-1);
                 if (pcm_data) {
                     if (pcm_data->data_len > 0) {
                         if (err::ERR_NONE != rtmp_client->push(pcm_data->data, pcm_data->data_len, audio_pts, true)) {

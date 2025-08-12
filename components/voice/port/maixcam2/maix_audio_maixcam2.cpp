@@ -105,6 +105,7 @@ namespace maix::audio
         int bits;
         bool block;
         audio::Format format;
+        maixcam2::SYS *ax_sys;
         union {
             maixcam2::AudioIn *ax_ai;
             maixcam2::AudioOut *ax_ao;
@@ -162,7 +163,7 @@ namespace maix::audio
                 err::check_raise(err::ERR_RUNTIME, "Only files with the `.pcm` and `.wav` extensions are supported.");
             }
         }
-
+        err::Err ret = err::ERR_NONE;
         audio_param_t *param = new audio_param_t();
         err::check_null_raise(param, "malloc failed");
         auto ax_bit_width = __maix_to_ax_fmt(format);
@@ -184,8 +185,40 @@ namespace maix::audio
             .period_size = 160,
             .period_count = 8,
         };
+
+        param->ax_sys = new maixcam2::SYS();
+        if (!param->ax_sys) {
+            delete param;
+            err::check_raise(err::ERR_RUNTIME, "constructing SYS failed");
+        }
+
+        ret = param->ax_sys->init();
+        if (ret != err::ERR_NONE) {
+            delete param->ax_sys;
+            param->ax_sys = nullptr;
+            delete param;
+            err::check_raise(ret, "initializing SYS failed");
+        }
+
         param->ax_ai = new maixcam2::AudioIn(&audio_in_param);
-        err::check_raise(param->ax_ai->init(), "audio init failed");
+        if (!param->ax_ai) {
+            param->ax_sys->deinit();
+            delete param->ax_sys;
+            param->ax_sys = nullptr;
+            delete param;
+            err::check_raise(err::ERR_RUNTIME, "constructing AudioIn failed");
+        }
+
+        ret = param->ax_ai->init();
+        if (ret != err::ERR_NONE) {
+            delete param->ax_ai;
+            param->ax_ai = nullptr;
+            param->ax_sys->deinit();
+            delete param->ax_sys;
+            param->ax_sys = nullptr;
+            delete param;
+            err::check_raise(ret, "initializing AudioIn failed");
+        }
         _param = param;
 
         int new_volume = atoi(app::get_sys_config_kv("audio", "input_volume", "-1").c_str());
@@ -204,6 +237,11 @@ namespace maix::audio
             if (param->ax_ai) {
                 delete param->ax_ai;
                 param->ax_ai = nullptr;
+            }
+
+            if (param->ax_sys) {
+                delete param->ax_sys;
+                param->ax_sys = nullptr;
             }
 
             delete param;
@@ -266,6 +304,11 @@ namespace maix::audio
             auto pcm = *it;
             delete pcm;
             it = param->remaining_pcm_list.erase(it);
+        }
+
+        int new_volume = atoi(app::get_sys_config_kv("audio", "input_volume", "-1").c_str());
+        if (new_volume >= 0) {
+            this->volume(new_volume);
         }
     }
 
@@ -532,6 +575,7 @@ namespace maix::audio
             }
         }
 
+        err::Err ret = err::ERR_NONE;
         audio_param_t *param = new audio_param_t();
         err::check_null_raise(param, "malloc failed");
         AX_AUDIO_BIT_WIDTH_E ax_bit_width = AX_AUDIO_BIT_WIDTH_16;
@@ -561,8 +605,40 @@ namespace maix::audio
             .period_size = 160,
             .period_count = 8,
         };
+
+        param->ax_sys = new maixcam2::SYS();
+        if (!param->ax_sys) {
+            delete param;
+            err::check_raise(err::ERR_RUNTIME, "constructing SYS failed");
+        }
+
+        ret = param->ax_sys->init();
+        if (ret != err::ERR_NONE) {
+            delete param->ax_sys;
+            param->ax_sys = nullptr;
+            delete param;
+            err::check_raise(ret, "initializing SYS failed");
+        }
+
         param->ax_ao = new maixcam2::AudioOut(&audio_out_param);
-        err::check_raise(param->ax_ao->init(), "audio out init failed");
+        if (!param->ax_ao) {
+            param->ax_sys->deinit();
+            delete param->ax_sys;
+            param->ax_sys = nullptr;
+            delete param;
+            err::check_raise(err::ERR_RUNTIME, "constructing AudioOut failed");
+        }
+
+        ret = param->ax_ao->init();
+        if (ret != err::ERR_NONE) {
+            delete param->ax_ao;
+            param->ax_ao = nullptr;
+            param->ax_sys->deinit();
+            delete param->ax_sys;
+            param->ax_sys = nullptr;
+            delete param;
+            err::check_raise(ret, "initializing AudioOut failed");
+        }
         _param = param;
 
         int new_volume = atoi(app::get_sys_config_kv("audio", "output_volume", "-1").c_str());

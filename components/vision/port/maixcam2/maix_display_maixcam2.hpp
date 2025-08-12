@@ -393,13 +393,17 @@ namespace maix::display
                     }
                 }
 
+                if (!frame) {
+                    return err::ERR_RUNTIME;
+                }
+
                 switch (format)
                 {
                 case image::FMT_GRAYSCALE:  // fall through
                 case image::FMT_RGB888:
                 case image::FMT_YVU420SP:
                 case image::FMT_YUV420SP:
-                    if (0 != __vo->push(this->_layer, this->_ch, frame)) {
+                    if (err::ERR_NONE != __vo->push(this->_layer, this->_ch, frame)) {
                         log::error("mmf_vo_frame_push failed\n");
                         delete frame;
                         frame = nullptr;

@@ -402,7 +402,7 @@ namespace maix::camera
         _format = format;
         _buff_num = buff_num > 3 ? buff_num : 3;
         _device =  device ? std::string(device) : "";
-        _fps = fps;
+        _fps = fps < 0 ? 30 : fps;
 
         _show_colorbar = false;
         _open_set_regs = set_regs_flag;
@@ -452,6 +452,7 @@ namespace maix::camera
         int height_tmp = (height == -1) ? _height : height;
         image::Format format_tmp = (format == image::FMT_INVALID) ? _format : format;
         double fps_tmp = (fps == -1) ? _fps : fps;
+        _fps = fps_tmp;
         int buff_num_tmp =( buff_num == -1) ? _buff_num : buff_num;
         camera_priv_t *priv = (camera_priv_t *)_param;
 
@@ -672,8 +673,9 @@ namespace maix::camera
 
     err::Err Camera::set_fps(double fps) {
         err::Err ret = err::ERR_NONE;
-        this->exposure(1000 / fps * 1000);
-        _fps = fps;
+        if (fps > 0) {
+            this->exposure(1000 / fps * 1000);
+        }
         return ret;
     }
 
@@ -710,6 +712,7 @@ namespace maix::camera
             return err::ERR_RUNTIME;
         }
         current_exposure_time = tAeParam.tExpManual.nShutter;
+        _fps = 1000000 / current_exposure_time;
         return current_exposure_time;
     }
 

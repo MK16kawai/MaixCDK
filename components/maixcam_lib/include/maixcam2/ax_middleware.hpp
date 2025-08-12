@@ -289,7 +289,6 @@ namespace maix::middleware::maixcam2 {
         int init_count;
         int card;
         int device;
-        SYS *sys;
         AX_POOL pool_id;
         ax_audio_in_param_t param;
         bool eq_en;
@@ -1213,7 +1212,7 @@ namespace maix::middleware::maixcam2 {
             }
             mod_param.unlock(AX_MOD_SYS);
 
-            log::info("sys init success, count:%d", sys_param->init_count);
+            // log::info("sys init success, count:%d", sys_param->init_count);
             __is_inited = true;
             return err::ERR_NONE;
         }
@@ -1227,7 +1226,7 @@ namespace maix::middleware::maixcam2 {
             err::check_null_raise(sys_param, "Get ax sys parameter failed!");
             if (sys_param->init_count > 1) {
                 sys_param->init_count --;
-                log::info("sys deinit success, count:%d", sys_param->init_count);
+                // log::info("sys deinit success, count:%d", sys_param->init_count);
             } else {
                 sys_param->init_count = 0;
                 AX_S32 axRet = AX_POOL_Exit();
