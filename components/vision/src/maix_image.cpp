@@ -1978,9 +1978,9 @@ __EXIT:
 
     std::vector<int> resize_map_pos(int w_in, int h_in, int w_out, int h_out, image::Fit fit, int x, int y, int w, int h)
     {
+        std::vector<int> result;
         float scale_x = static_cast<float>(w_out) / w_in;
         float scale_y = static_cast<float>(h_out) / h_in;
-        std::vector<int> result;
 
         if (fit == image::Fit::FIT_FILL)
         {
@@ -1998,7 +1998,7 @@ __EXIT:
         else if (fit == image::Fit::FIT_CONTAIN)
         {
             float scale = std::min(scale_x, scale_y);
-            if (w_out > h_out)
+            if (scale_x > scale_y)
             {
                 x = static_cast<int>((w_out - w_in * scale) / 2 + x * scale);
                 y = static_cast<int>(y * scale);
@@ -2017,7 +2017,7 @@ __EXIT:
         else if (fit == image::Fit::FIT_COVER)
         {
             float scale = std::max(scale_x, scale_y);
-            if (w_out > h_out)
+            if (scale_x > scale_y)
             {
                 x = static_cast<int>(x * scale);
                 y = static_cast<int>((h_out - h_in * scale) / 2 + y * scale);
@@ -2071,7 +2071,7 @@ __EXIT:
         else if (fit == image::Fit::FIT_CONTAIN)
         {
             float scale = std::min(scale_x, scale_y);
-            if (w_out > h_out)
+            if (scale_x > scale_y)
             {
                 x = static_cast<int>((x - (w_out - w_in * scale) / 2) / scale);
                 y = static_cast<int>(y / scale);
@@ -2090,7 +2090,7 @@ __EXIT:
         else if (fit == image::Fit::FIT_COVER)
         {
             float scale = std::max(scale_x, scale_y);
-            if (w_out > h_out)
+            if (scale_x > scale_y)
             {
                 x = static_cast<int>(x / scale);
                 y = static_cast<int>((y - (h_out - h_in * scale) / 2) / scale);

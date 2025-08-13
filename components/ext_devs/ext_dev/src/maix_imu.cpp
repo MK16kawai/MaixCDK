@@ -94,7 +94,7 @@ IMU::IMU(std::string driver, int i2c_bus, int addr, int freq, imu::Mode mode, im
 
     bool found = false;
 
-    if(driver == "default")
+    if(driver.empty() || driver == "default")
     {
         if(sys::device_id() == "maixcam_pro")
         {

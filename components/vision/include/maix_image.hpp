@@ -532,7 +532,7 @@ namespace maix::image
          * Resize image, will create a new resized image object
          * @param width new width, if value is -1, will use height to calculate aspect ratio
          * @param height new height, if value is -1, will use width to calculate aspect ratio
-         * @param object_fit fill, contain, cover, by default is fill
+         * @param fit fill, contain, cover, by default is fill
          * @param method resize method, by default is NEAREST
          * @return Always return a new resized image object even size not change, So in C++ you should take care of the return value to avoid memory leak.
          *         And it's better to judge whether the size has changed before calling this function to make the program more efficient.
@@ -541,7 +541,7 @@ namespace maix::image
          *     img = img->resize(width, height);
          * @maixpy maix.image.Image.resize
          */
-        image::Image *resize(int width, int height, image::Fit object_fit = image::Fit::FIT_FILL, image::ResizeMethod method = image::ResizeMethod::NEAREST);
+        image::Image *resize(int width, int height, image::Fit fit = image::Fit::FIT_FILL, image::ResizeMethod method = image::ResizeMethod::NEAREST);
 
         /**
          * Affine transform image, will create a new transformed image object, need 3 points.

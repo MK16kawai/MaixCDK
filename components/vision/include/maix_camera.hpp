@@ -429,6 +429,7 @@ namespace maix::camera
         /**
          * Get sensor size
          * @return Return a list of sensor sizes, the format is [w, h].
+         * @maixpy maix.camera.Camera.get_sensor_size
         */
         std::vector<int> get_sensor_size();
 
