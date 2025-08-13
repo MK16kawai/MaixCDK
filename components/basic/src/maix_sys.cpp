@@ -567,7 +567,9 @@ namespace maix::sys
 
     std::map<std::string, unsigned long> cpu_freq()
     {
+        static unsigned long last_freq = 0;
         std::map<std::string, unsigned long> res;
+        res["cpu0"] = last_freq;
 #if PLATFORM_MAIXCAM
         /* format:
                                  enable  prepare  protect                                duty
@@ -631,12 +633,15 @@ namespace maix::sys
             }
         }
 #endif
+        last_freq = res["cpu0"];
         return res;
     }
 
     std::map<std::string, float> cpu_temp()
     {
+        static unsigned long last_temp = 0;
         std::map<std::string, float> res;
+        res["cpu"] = last_temp;
         FILE *file = fopen("/sys/class/thermal/thermal_zone0/temp", "r");
         if (!file)
         {
@@ -650,6 +655,7 @@ namespace maix::sys
         }
         fclose(file);
         res["cpu"] = temp / 1000.0;
+        last_temp = res["cpu"];
         return res;
     }
 
