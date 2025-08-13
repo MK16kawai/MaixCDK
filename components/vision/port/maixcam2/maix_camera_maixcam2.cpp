@@ -21,6 +21,10 @@ using namespace maix::middleware::maixcam2;
 namespace maix::camera
 {
     static bool set_regs_flag = false;
+    static std::string __device_name = "";
+    static std::vector<int> __sensor_size;
+    static bool __invert_flip = false;
+    static bool __invert_mirror = false;
 
     std::vector<std::string> list_devices()
     {
@@ -28,31 +32,60 @@ namespace maix::camera
         return std::vector<std::string>();
     }
 
-    std::string get_device_name()
-    {
+    static void __get_global_info() {
         peripheral::i2c::I2C i2c_obj(0, peripheral::i2c::Mode::MASTER);
 
         std::vector<int> addr_list = i2c_obj.scan();
         for (size_t i = 0; i < addr_list.size(); i++) {
             switch (addr_list[i]) {
                 case 0x29:  // gcore_gc4653
-                    return "gcore_gc4653";
+                    __device_name = "gcore_gc4653";
+                    __sensor_size = {2560, 1440};
+                    __invert_flip = false;
+                    __invert_mirror = false;
+                    break;
                 case 0x30:  // sc850sl
-                    return "smartsens_sc850sl";
+                    __device_name = "smartsens_sc850sl";
+                    __sensor_size = {3840, 2160};
+                    __invert_flip = false;
+                    __invert_mirror = false;
+                    break;
                 case 0x2b:  // lt6911
-                    return "lt6911";
+                    __device_name = "lt6911";
+                    __sensor_size = {1920, 1080};
+                    __invert_flip = false;
+                    __invert_mirror = false;
+                    break;
                 case 0x36:  // ov_os04a10
-                    return "ov_os04a10";
+                    __device_name = "ov_os04a10";
+                    __sensor_size = {2560, 1440};
+                    __invert_flip = true;
+                    __invert_mirror = false;
+                    break;
                 case 0x37:  // gcore_gc02m1
-                    return "gcore_gc02m1";
+                    __device_name = "gcore_gc02m1";
+                    __sensor_size = {1600, 1200};
+                    __invert_flip = false;
+                    __invert_mirror = false;
+                    break;
                 case 0x48:// fall through
                 case 0x3c:  // os04d10 ??ov_ov2685
-                    return "ov_os04d10";
-                default: break;
+                    __device_name = "ov_os04d10";
+                    __sensor_size = {2560, 1440};
+                    __invert_flip = true;
+                    __invert_mirror = false;
+                    break;
+                default:
+                    __device_name = "unknown";
+                    __sensor_size = {0, 0};
+                    break;
             }
         }
-        err::check_raise(err::ERR_RUNTIME, "Not found any sensor");
-        return "unknown";
+    }
+
+    std::string get_device_name()
+    {
+        return __device_name;
     }
 
     void set_regs_enable(bool enable) {
@@ -343,29 +376,7 @@ namespace maix::camera
 
     std::vector<int> get_sensor_size()
     {
-        peripheral::i2c::I2C i2c_obj(0, peripheral::i2c::Mode::MASTER);
-
-        std::vector<int> addr_list = i2c_obj.scan();
-        for (size_t i = 0; i < addr_list.size(); i++) {
-            switch (addr_list[i]) {
-                case 0x29:  // gcore_gc4653
-                    return {2560, 1440};
-                case 0x30:  // sc850sl
-                    return {3840, 2160};
-                case 0x2b:  // lt6911
-                    return {1920, 1080};
-                case 0x36:  // ov_os04a10
-                    return {2560, 1440};
-                case 0x37:  // gcore_gc02m1
-                    return {1600, 1200};
-                case 0x48:// fall through
-                case 0x3c:  // os04d10 ??ov_ov2685
-                    return {2560, 1440};
-                default: break;
-            }
-        }
-        err::check_raise(err::ERR_RUNTIME, "Not found any sensor");
-        return {0, 0};
+        return __sensor_size;
     }
 
     typedef struct {
@@ -515,7 +526,10 @@ namespace maix::camera
             err::check_raise(err, "Add channel failed");
         }
 
+        __get_global_info();
         __get_cam_flip_mirror(priv->chn.vflip, priv->chn.mirror);
+        priv->chn.vflip = __invert_flip ? !priv->chn.vflip : priv->chn.vflip;
+        priv->chn.mirror = __invert_mirror ? !priv->chn.mirror : priv->chn.mirror;
         priv->ax_sys = ax_sys;
         priv->ax_vi = ax_vi;
         priv->chn.id = ch;

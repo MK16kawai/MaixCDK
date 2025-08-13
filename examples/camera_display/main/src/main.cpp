@@ -399,7 +399,12 @@ static int cmd_loop(camera::Camera *cam, display::Display *disp)
         {
             double fps = value_f;
             log::info("set fps %f", fps);
-            err::check_raise(cam->set_fps(fps), "set fps error");
+            if (fps < 0) {
+                auto curr_fps =  cam->fps();
+                log::info("curr fps %f", curr_fps);
+            } else {
+                err::check_raise(cam->set_fps(fps), "set fps error");
+            }
             break;
         }
         case 18:
