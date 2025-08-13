@@ -105,8 +105,8 @@ namespace maix::sys
      *           used: used memory size in Byte.
      *       hw_total: total memory size in Byte of hardware, the total <= hw_total，
      *                 OS kernel may reserve some memory for some hardware like camera, npu, display etc.
-     *       custom_total: Board or Chip custom memory management area. For example, for MaixCAM is IOA, for MaixCAM2 is CMM.
-     *       custom_used: Board or Chip custom memory management area used size.
+     *       cmm_total: Board or Chip custom memory management area, we call them cmm memory here. For example, for MaixCAM is IOA, for MaixCAM2 is CMM.
+     *       cmm_used: Board or Chip custom memory management area used size, we call them cmm memory here.
      *       cma_total: Contiguous Memory Allocator (Linux CMA standard) total size in Byte.
      *       cma_used: Contiguous Memory Allocator (Linux CMA standard) used size in Byte.
      * @maixpy maix.sys.memory_info
@@ -148,10 +148,17 @@ namespace maix::sys
 
     /**
      * Get NPU frequency
-     * @return NPU frequency, dict type, e.g. {"npu0": 500000000}
+     * @return NPU frequency, dict type, e.g. {"npu0": 500000000}, value -1 means not support query on this platform.
      * @maixpy maix.sys.npu_freq
      */
     std::map<std::string, unsigned long> npu_freq();
+
+    /**
+     * Get NPU usage
+     * @return NPU usage, dict type, e.g. {"npu": 50.0, "npu0": 50, "npu1": 50}
+     * @maixpy maix.sys.npu_usage
+     */
+     std::map<std::string, float> npu_usage();
 
     /**
      * Get disk usage

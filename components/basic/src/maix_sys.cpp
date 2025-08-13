@@ -655,14 +655,24 @@ namespace maix::sys
 
     std::map<std::string, float> cpu_usage()
     {
-        std::map<std::string, float> usage;
+        struct CpuTimes
+        {
+            long total;
+            long idle;
+        };
 
+        static std::map<std::string, CpuTimes> prev; // 记住上一次的数据
+        std::map<std::string, float> usage;
+        bool first_time = prev.empty();
+
+        // 读取 /proc/stat
         std::ifstream proc_stat("/proc/stat");
         std::string line;
         while (std::getline(proc_stat, line))
         {
             std::istringstream iss(line);
-            std::vector<std::string> words((std::istream_iterator<std::string>(iss)), std::istream_iterator<std::string>());
+            std::vector<std::string> words((std::istream_iterator<std::string>(iss)),
+                                           std::istream_iterator<std::string>());
 
             if (words[0].substr(0, 3) == "cpu")
             {
@@ -670,13 +680,32 @@ namespace maix::sys
                 for (size_t i = 1; i < words.size(); i++)
                     total_time += std::stol(words[i]);
 
-                long idle_time = std::stol(words[4]); // idle time is 4th field
-                float cpu_usage = 100 * (1 - (float)idle_time / total_time);
+                long idle_time = std::stol(words[4]) + std::stol(words[5]); // idle + iowait
 
-                usage[words[0]] = cpu_usage;
+                // 如果有上一次数据，就计算
+                if (!first_time)
+                {
+                    long total_diff = total_time - prev[words[0]].total;
+                    long idle_diff  = idle_time - prev[words[0]].idle;
+
+                    if (total_diff > 0)
+                    {
+                        float cpu_percent = 100.0f * (total_diff - idle_diff) / total_diff;
+                        usage[words[0]] = cpu_percent;
+                    }
+                    else
+                    {
+                        usage[words[0]] = 0.0f;
+                    }
+                }
+
+                // 更新记录
+                prev[words[0]] = {total_time, idle_time};
             }
         }
 
+        if(first_time)
+            return cpu_usage();
         return usage;
     }
 
@@ -722,6 +751,127 @@ namespace maix::sys
         }
 #endif
         return res;
+    }
+
+#if PLATFORM_MAIXCAM2
+    static void ensure_enable_npu_top()
+    {
+        std::ifstream fin("/proc/ax_proc/npu/enable");
+        std::string content;
+        if(fin.is_open())
+        {
+            std::getline(fin, content);
+            fin.close();
+
+            // 去除空白
+            content.erase(content.begin(), std::find_if(content.begin(), content.end(), [](int ch){ return !std::isspace(ch); }));
+            content.erase(std::find_if(content.rbegin(), content.rend(), [](int ch){ return !std::isspace(ch); }).base(), content.end());
+
+            if(content == "1")
+                return; // 已是1，无需写入
+        }
+
+        // 写入 "1"
+        std::ofstream fout("/proc/ax_proc/npu/enable");
+        if(fout.is_open())
+        {
+            fout << "1" << std::endl;
+            fout.close();
+        }
+        else
+        {
+            log::error("Failed to open /proc/ax_proc/npu/enable for writing");
+        }
+    }
+#endif
+
+    std::map<std::string, float> npu_usage()
+    {
+        std::map<std::string, float> usage;
+        usage["npu"] = -1;
+#if PLATFORM_MAIXCAM2
+        // ensure /proc/ax_proc/npu/enable content is 1
+        ensure_enable_npu_top();
+        // read /proc/ax_proc/npu/top, format is:
+        /*  core:vnpu_1
+            time:140
+            period:1000000
+            utilization:95%
+
+            core:vnpu_2
+            time:0
+            period:1000000
+            utilization:0%
+            */
+        // content can be "nputop info not updated over 127727 ms!"
+        // if get_sys_config_kv(npu, ai_isp, 0) is 1, only read vnpu_1's utilization as npu and npu0 result.
+        // else read vnpu_1 as npu0, vnpu_2 as npu1, average npu1 and npu0 as npu usage.
+        bool ai_isp_enabled = (app::get_sys_config_kv("npu", "ai_isp", "0") == "1");
+        std::ifstream fin("/proc/ax_proc/npu/top");
+        if(!fin.is_open())
+        {
+            return usage;
+        }
+
+        std::string line;
+        float vnpu_1_util = 0.0f;
+        float vnpu_2_util = 0.0f;
+        std::string current_core;
+
+        while(std::getline(fin, line))
+        {
+            line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](int ch) { return !std::isspace(ch); }));
+            line.erase(std::find_if(line.rbegin(), line.rend(), [](int ch) { return !std::isspace(ch); }).base(), line.end());
+
+            if(line.empty()) continue;
+
+            if(line.find("core:") == 0)
+            {
+                size_t pos = line.find("vnpu");
+                if(pos != std::string::npos)
+                {
+                    current_core = line.substr(pos);
+                }
+            }
+            else if(line.find("utilization:") == 0)
+            {
+                std::string util_str = line.substr(12);
+                if(!util_str.empty() && util_str.back() == '%')
+                    util_str.pop_back();
+                try
+                {
+                    float util_val = std::stof(util_str);
+                    if(current_core == "vnpu_1")
+                    {
+                        vnpu_1_util = util_val;
+                    }
+                    else if(current_core == "vnpu_2")
+                    {
+                        vnpu_2_util = util_val;
+                    }
+                }
+                catch(...)
+                {
+                    // 转换失败忽略
+                }
+            }
+        }
+
+        fin.close();
+
+        if(!ai_isp_enabled)
+        {
+            usage["npu"] = vnpu_1_util;
+            usage["npu0"] = vnpu_1_util;
+        }
+        else
+        {
+            usage["npu0"] = vnpu_1_util;
+            usage["npu1"] = vnpu_2_util;
+            usage["npu"] = (vnpu_1_util + vnpu_2_util) / 2.0f;
+        }
+#endif
+        return usage;
     }
 
     std::map<std::string, unsigned long long> disk_usage(const std::string &path)
