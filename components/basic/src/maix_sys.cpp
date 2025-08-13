@@ -711,7 +711,9 @@ namespace maix::sys
 
     std::map<std::string, unsigned long> npu_freq()
     {
+        static unsigned long last_freq = 0;
         std::map<std::string, unsigned long> res;
+        res["npu0"] = last_freq;
 #if PLATFORM_MAIXCAM
         /* format:
                                  enable  prepare  protect                                duty
@@ -750,6 +752,7 @@ namespace maix::sys
             res["npu0"] = atoi(freq.c_str()) * 1000000;
         }
 #endif
+        last_freq = res["npu0"];
         return res;
     }
 

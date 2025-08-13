@@ -149,6 +149,7 @@ namespace maix::sys
     /**
      * Get NPU frequency
      * @return NPU frequency, dict type, e.g. {"npu0": 500000000}, value -1 means not support query on this platform.
+     *         If get from system failed, will return last time value.
      * @maixpy maix.sys.npu_freq
      */
     std::map<std::string, unsigned long> npu_freq();
