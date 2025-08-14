@@ -1141,13 +1141,18 @@ _error:
 
         if (_show_colorbar) {
             image::Image *img = new image::Image(_width, _height);
+            err::check_null_raise(img, "create colorbar image failed");
             generate_colorbar(*img);
-            err::check_null_raise(img, "camera read failed");
             return img;
         } else {
             int read_block_ms = block_ms < 0 ? (1000.0 / _fps * 3) : block_ms;
+            read_block_ms = block ? read_block_ms : 0;
             image::Image *img = _mmf_read(_ch, _width, _height, _format, buff, buff_size, read_block_ms);
-            err::check_null_raise(img, "camera read failed");
+            if (!block && img == nullptr) {
+                return nullptr;
+            } else {
+                err::check_null_raise(img, "camera read failed");
+            }
             // FIXME: delete me and fix driver bug
             if (_buff_num != 1) {
                 uint64_t wait_us = 1000000 / _fps;

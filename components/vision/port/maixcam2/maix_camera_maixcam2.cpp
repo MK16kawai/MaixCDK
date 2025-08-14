@@ -596,13 +596,15 @@ namespace maix::camera
 
         if (_show_colorbar) {
             image::Image *img = new image::Image(_width, _height);
+            err::check_null_raise(img, "create colorbar image failed");
             __generate_colorbar(*img);
-            err::check_null_raise(img, "camera read failed");
             return img;
         } else {
-            if (block) block_ms = -1;
+            if (!block) block_ms = 0;
             auto frame = vi->pop(priv->chn.id, block_ms);
-            if (frame == nullptr) {
+            if (!block && frame == nullptr) {
+                return nullptr;
+            } else if (frame == nullptr) {
                 err::check_raise(err::ERR_BUFF_EMPTY, "read camera failed");
             }
 

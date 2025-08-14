@@ -124,11 +124,27 @@ namespace maix::camera
          *             In MaixPy, default to None, you can create a image.Image object, then pass img.data() to buff.
          * @param block block read, default is true, means block util read image successfully,
          *              if set to false, will return nullptr if no image in buffer
+         * @param block_ms block read timeout.
+         * For the MaixCam, due to some issues with the platform’s interface, setting block_ms too low may result in duplicate frames being output.
+         * @return image::Image object, if failed, return nullptr, you should delete if manually in C++
+         * @maixcdk maix.camera.Camera.read
+        */
+        image::Image *read(void *buff, size_t buff_size = 0, bool block = true, int block_ms = -1);
+
+        /**
+         * Get one frame image from camera buffer, must call open method before read.
+         * If open method not called, will call it automatically, if open failed, will throw exception!
+         * So call open method before read is recommended.
+         * @param block block read, default is true, means block util read image successfully,
+         *              if set to false, will return nullptr if no image in buffer
          * @param block_ms block read timeout
+         * For the MaixCam, due to some issues with the platform’s interface, setting block_ms too low may result in duplicate frames being output.
          * @return image::Image object, if failed, return nullptr, you should delete if manually in C++
          * @maixpy maix.camera.Camera.read
         */
-        image::Image *read(void *buff = nullptr, size_t buff_size = 0, bool block = true, int block_ms = -1);
+        image::Image *read(bool block = true, int block_ms = -1) {
+            return read(nullptr, 0, block, block_ms);
+        }
 
         /**
          * Read the raw image and obtain the width, height, and format of the raw image through the returned Image object.
