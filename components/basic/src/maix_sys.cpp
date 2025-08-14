@@ -47,6 +47,7 @@ namespace maix::sys
             ver.erase(ver.find_last_not_of(" \t\n") + 1);
             return ver;
         }
+        fclose(file);
         return "Unkonwn";
     }
 
@@ -466,6 +467,7 @@ namespace maix::sys
             key.erase(key.find_last_not_of(" \t\n") + 1);
             return key;
         }
+        fclose(file);
         return "";
     }
 
@@ -595,11 +597,13 @@ namespace maix::sys
                 unsigned long freq;
                 if (sscanf(idx, "clk_c906_0 %*d %*d %*d %lu", &freq) == 1)
                 {
+                    fclose(file);
                     res["cpu0"] = freq;
                     return res;
                 }
             }
         }
+        fclose(file);
 #elif PLATFORM_MAIXCAM2
         int count = 0;
         while (!app::need_exit()) {
@@ -745,11 +749,13 @@ namespace maix::sys
                 unsigned long freq;
                 if (sscanf(idx, "clk_tpu %*d %*d %*d %lu", &freq) == 1)
                 {
+                    fclose(file);
                     res["npu0"] = freq;
                     return res;
                 }
             }
         }
+        fclose(file);
 #elif PLATFORM_MAIXCAM2
         std::string freq;
         auto path = "/proc/ax_proc/npu/clk";

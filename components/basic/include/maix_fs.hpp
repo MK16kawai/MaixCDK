@@ -200,9 +200,17 @@ namespace maix::fs
          * @maixpy maix.fs.File.__init__
          * @maixcdk maix.fs.File.File
          */
-        File()
+        File(const std::string path = "", const std::string &mode = "r")
         {
             _fp = nullptr;
+            if(!path.empty())
+            {
+                auto e = open(path, mode);
+                if(e != err::ERR_NONE)
+                {
+                    throw err::Exception(e, "open file failed");
+                }
+            }
         }
 
         ~File()

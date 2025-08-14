@@ -289,7 +289,7 @@ namespace maix::fs
         // open file use std::fopen
         if (_fp != nullptr)
         {
-            return err::ERR_NOT_READY;
+            return err::ERR_REOPEN;
         }
         _fp = std::fopen(path.c_str(), mode.c_str());
         if (_fp == nullptr)
