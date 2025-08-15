@@ -483,6 +483,45 @@ namespace maix::nn
     //     }printf("\r\n");
     // }
 
+    static bool isValidUTF8(const std::string& str) {
+        size_t i = 0;
+        while (i < str.size()) {
+            unsigned char c = static_cast<unsigned char>(str[i]);
+            size_t len = 0;
+
+            if ((c & 0x80) == 0x00) {
+                // 1-byte (ASCII)
+                len = 1;
+            } else if ((c & 0xE0) == 0xC0) {
+                // 2-byte
+                len = 2;
+            } else if ((c & 0xF0) == 0xE0) {
+                // 3-byte
+                len = 3;
+            } else if ((c & 0xF8) == 0xF0) {
+                // 4-byte
+                len = 4;
+            } else {
+                return false; // 非法的起始字节
+            }
+
+            // 检查长度
+            if (i + len > str.size()) {
+                return false; // 不够字节
+            }
+
+            // 检查后续字节是否是 10xxxxxx
+            for (size_t j = 1; j < len; ++j) {
+                if ((static_cast<unsigned char>(str[i + j]) & 0xC0) != 0x80) {
+                    return false;
+                }
+            }
+
+            i += len;
+        }
+        return true;
+    }
+
     /**
      * Transcribe pcm data to text
      * @param pcm RAW data
@@ -688,9 +727,13 @@ namespace maix::nn
 
         std::string s;
         for (const auto i : results) {
-            char str[1024];
+            char str[1024] = {0};
             base64_decode((const uint8_t*)param->token_tables[i].c_str(), (uint32_t)param->token_tables[i].size(), str);
-            s += str;
+            auto new_str = std::string(str);
+            if (!isValidUTF8(new_str)) {
+                continue;
+            }
+            s += new_str;
         }
 
         if (param->language == "zh") {
