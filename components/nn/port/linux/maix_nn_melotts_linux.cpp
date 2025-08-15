@@ -30,7 +30,7 @@ namespace maix::nn
         return err::ERR_NOT_IMPL;
     }
 
-    Bytes *MeloTTS::forward(std::string text, std::string path, bool output_pcm) {
+    Bytes *MeloTTS::infer(std::string text, std::string path, bool output_pcm) {
         return nullptr;
     }
 } // namespace maix::nn

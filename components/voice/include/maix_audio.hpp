@@ -476,21 +476,20 @@ namespace maix::audio
          * @note Do not set the time too low, for example: 1ms, as the buffer may not be ready with audio data, which could corrupt the internal state.
          * @note In non-blocking mode, you need to actively execute reset() before you can start capturing audio.
          * Additionally, in non-blocking mode, if the buffer does not have enough data, only the currently prepared audio data will be returned.
-         * As a result, the length of the actual output audio data may not match the length of the captured audio data.
-         * @param record_ms Block and record audio data lasting `record_ms` milliseconds and save it to a file, the return value does not return audio data. Only valid if the initialisation `path` is set.
-         * @return pcm data. datatype @see Bytes. If you pass in record_ms parameter, the return value is an empty Bytes object.
+         * the length of the actual output audio data may not match the length of the captured audio data.
+         * @param record_ms Block and record audio data lasting `record_ms` milliseconds and save it to a file.
+         * @return pcm data. datatype @see Bytes. For MaixCDK users, you need to manually release the returned PCM object.
          * @maixpy maix.audio.Recorder.record
         */
         maix::Bytes *record(int record_ms = -1);
 
         /**
          * Record, Read all cached data in buffer and return. If there is no audio data in the buffer, may return empty data.
-         * @note This interface is experimental and may be removed in the future.
          * @note In non-blocking mode, you need to actively execute reset() before you can start capturing audio.
          * Additionally, in non-blocking mode, if the buffer does not have enough data, only the currently prepared audio data will be returned.
-         * As a result, the length of the actual output audio data may not match the length of the captured audio data.
+         * the length of the actual output audio data may not match the length of the captured audio data.
          * @param record_size Record audio data of size record_size.
-         * @return pcm data. datatype @see Bytes. If you pass in record_ms parameter, the return value is an empty Bytes object.
+         * @return pcm data. datatype @see Bytes. For MaixCDK users, you need to manually release the returned PCM object.
          * @maixcdk maix.audio.Recorder.record_bytes
         */
         maix::Bytes *record_bytes(int record_size = -1);

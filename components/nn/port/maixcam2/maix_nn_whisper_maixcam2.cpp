@@ -491,6 +491,11 @@ namespace maix::nn
     */
     std::string Whisper::transcribe_raw(Bytes *pcm, int sample_rate, int channels, int bits_per_frame) {
         err::Err err = err::ERR_NONE;
+        if (!pcm || pcm->data_len == 0) {
+            log::info("pcm data is empty");
+            return "";
+        }
+
         WhisperParam *param = (WhisperParam *) _extra_param;
         if (sample_rate != _input_pcm_samplerate) {
             log::error("wav sample rate not match, must be %d!", _input_pcm_samplerate);

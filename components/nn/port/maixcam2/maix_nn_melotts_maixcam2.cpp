@@ -783,9 +783,9 @@ namespace maix::nn
      * @param output_pcm Enable or disable the output of raw PCM data. The default output sampling rate is 44100,
      * the number of channels is 1, and the sampling depth is 16 bits. default is false.
      * @return raw PCM data
-     * @maixpy maix.nn.MeloTTS.forward
+     * @maixpy maix.nn.MeloTTS.infer
     */
-    Bytes *MeloTTS::forward(std::string text, std::string path, bool output_pcm) {
+    Bytes *MeloTTS::infer(std::string text, std::string path, bool output_pcm) {
         err::Err err = err::ERR_NONE;
         MelottsParam *param = (MelottsParam *)_extra_param;
         float noise_scale   = param->noise_scale;
