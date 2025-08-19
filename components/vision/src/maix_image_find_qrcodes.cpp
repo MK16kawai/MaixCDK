@@ -9,9 +9,73 @@
 #include "maix_image_util.hpp"
 #include "zbar.hpp"
 #include "omv.hpp"
+#include <iconv.h>
 
 namespace maix::image
 {
+    // 检测字符串是否为合法 UTF-8
+    static bool is_utf8(const std::string& str) {
+        const unsigned char* bytes = (const unsigned char*)str.c_str();
+        size_t len = str.size();
+        size_t i = 0;
+        while (i < len) {
+            if (bytes[i] <= 0x7F) { // ASCII
+                i++;
+            } else if ((bytes[i] & 0xE0) == 0xC0) { // 2-byte
+                if (i + 1 >= len || (bytes[i+1] & 0xC0) != 0x80) return false;
+                i += 2;
+            } else if ((bytes[i] & 0xF0) == 0xE0) { // 3-byte
+                if (i + 2 >= len || (bytes[i+1] & 0xC0) != 0x80 || (bytes[i+2] & 0xC0) != 0x80)
+                    return false;
+                i += 3;
+            } else if ((bytes[i] & 0xF8) == 0xF0) { // 4-byte
+                if (i + 3 >= len || (bytes[i+1] & 0xC0) != 0x80 ||
+                    (bytes[i+2] & 0xC0) != 0x80 || (bytes[i+3] & 0xC0) != 0x80)
+                    return false;
+                i += 4;
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // GB2312 -> UTF-8 转换
+    static std::string gb2312_to_utf8(const std::string& gb2312Str) {
+        iconv_t cd = iconv_open("UTF-8", "GB2312");
+        if (cd == (iconv_t)-1) {
+            throw std::runtime_error("iconv_open failed");
+        }
+
+        size_t inBytesLeft = gb2312Str.size();
+        char* inBuf = const_cast<char*>(gb2312Str.data());
+
+        size_t outBytesLeft = inBytesLeft * 2 + 1;
+        char* outBuf = new char[outBytesLeft];
+        char* outPtr = outBuf;
+        memset(outBuf, 0, outBytesLeft);
+
+        if (iconv(cd, &inBuf, &inBytesLeft, &outPtr, &outBytesLeft) == (size_t)-1) {
+            delete[] outBuf;
+            iconv_close(cd);
+            throw std::runtime_error("iconv conversion failed");
+        }
+
+        std::string utf8Str(outBuf);
+        delete[] outBuf;
+        iconv_close(cd);
+        return utf8Str;
+    }
+
+    // 自动转换 ZBar 扫描结果为 UTF-8
+    static std::string str_to_utf8(const std::string& data) {
+        if (is_utf8(data)) {
+            return data; // 已经是 UTF-8
+        } else {
+            return gb2312_to_utf8(data); // 假设是 GB2312
+        }
+    }
+
     static void calculate_rect(const std::vector<int>& vec, int &x, int &y, int &width, int &height) {
         int min_x = 0xffff, min_y = 0xffff;
         int max_x = 0, max_y = 0;
@@ -153,7 +217,7 @@ namespace maix::image
                     {(int)result.corners[i][4], (int)result.corners[i][5]},
                     {(int)result.corners[i][2], (int)result.corners[i][3]},
                 };
-                std::string payload = result.data[i];
+                std::string payload = str_to_utf8(result.data[i]);
                 image::QRCode qrcode(rect,
                                     corners,
                                     payload,
