@@ -345,7 +345,7 @@ namespace maix::peripheral::key
         } else {
             log::debug("Get key devices success.");
         }
-
+#if PLATFORM_MAIXCAM
         if (std::find(_device_list.begin(), _device_list.end(), KEY_DEVICE1) != _device_list.end() &&
             !fs::exists(KEY_DEVICE1) &&
             (device == "" || device == KEY_DEVICE1))
@@ -353,7 +353,7 @@ namespace maix::peripheral::key
             log::info("%s: Init pmu power key.", sys::device_name().c_str());
             _init_power_key((void*)data);
         }
-
+#endif
         if (open)
         {
             err::Err e = this->open();
