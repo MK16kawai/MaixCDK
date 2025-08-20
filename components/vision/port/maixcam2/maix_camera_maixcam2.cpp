@@ -376,6 +376,9 @@ namespace maix::camera
 
     std::vector<int> get_sensor_size()
     {
+        if (__sensor_size.size() == 0) {
+            __get_global_info();
+        }
         return __sensor_size;
     }
 
