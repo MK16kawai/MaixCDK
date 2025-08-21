@@ -105,6 +105,9 @@ namespace maix::camera
 
     std::string get_device_name()
     {
+        if (__device_name.size() == 0) {
+            __get_global_info();
+        }
         return __device_name;
     }
 
