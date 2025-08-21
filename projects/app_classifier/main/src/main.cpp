@@ -9,6 +9,35 @@
 
 using namespace maix;
 
+image::Image *get_back_img(int screen_h)
+{
+    image::Image *ret_img = image::load("./assets/ret.png", image::Format::FMT_RGB888);
+    if (!ret_img)
+    {
+        log::error("load ret image failed");
+        return nullptr;
+    }
+    int new_h = screen_h * 0.15;
+    int new_w = new_h / ret_img->height() * ret_img->width();
+    new_h = new_h % 2 == 0 ? new_h : new_h + 1; // make sure height is even
+    new_w = new_w % 2 == 0 ? new_w : new_w + 1; // make sure width is even
+    if(new_h != ret_img->height() || new_w != ret_img->width())
+    {
+        log::info("resize ret image from %dx%d to %dx%d", ret_img->width(), ret_img->height(), new_w, new_h);
+        image::Image *tmp_img = ret_img->resize(new_w, new_h, image::FIT_CONTAIN);
+        if (!tmp_img)
+        {
+            log::error("resize ret image failed");
+            delete ret_img;
+            throw err::Exception(err::ERR_NO_MEM, "resize ret image failed");
+        }
+        delete ret_img;
+        ret_img = tmp_img;
+    }
+
+    return ret_img;
+}
+
 int _main(int argc, char *argv[])
 {
     int ret = 0;
@@ -20,12 +49,6 @@ int _main(int argc, char *argv[])
     touchscreen::TouchScreen ts;
     int ts_x = 0, ts_y = 0;
     bool ts_pressed = false;
-    image::Image *ret_img = image::load("./assets/ret.png", image::Format::FMT_RGB888);
-    if (!ret_img)
-    {
-        log::error("load ret image failed");
-        return -12345;
-    }
 
     log::info("model path: %s", model_path);
     nn::Classifier classifier(model_path);
@@ -41,6 +64,11 @@ int _main(int argc, char *argv[])
     // image::Size input_size = classifier.input_size();
     camera::Camera cam = camera::Camera(w, h, classifier.input_format());
     log::info("open camera success");
+
+    auto ret_img = get_back_img(cam.height());
+    int font_scale = 2;
+    int font_thickness = 2;
+
     uint64_t t, t2, t3, t_show, t_all = 0;
     while (!app::need_exit())
     {
@@ -59,12 +87,12 @@ int _main(int argc, char *argv[])
         t3 = time::ticks_ms();
         int max_idx = result->at(0).first;
         float max_score = result->at(0).second;
-        img->draw_rect((w - min_len) / 2, (h - min_len) / 2, min_len, min_len, image::COLOR_WHITE, 2);
+        img->draw_rect((w - min_len) / 2, (h - min_len) / 2, min_len, min_len, image::COLOR_WHITE, font_thickness);
         snprintf(msg, sizeof(msg), "%4.1f %%:\n%s", max_score * 100, classifier.labels[max_idx].c_str());
-        img->draw_string((w - min_len) / 2, disp.height() - 80, msg, image::COLOR_RED, 2, 2);
+        img->draw_string((w - min_len) / 2, disp.height() - 80, msg, image::COLOR_RED, font_scale, font_thickness);
         img->draw_image(0, 0, *ret_img);
         snprintf(tmp_chars, sizeof(tmp_chars), "All: %ldms, cam: %ldms\ndetect: %ldms, show: %ldms", t_all, t2 - t, t3 - t2, t_show);
-        img->draw_string((w - min_len) / 2, 4, tmp_chars, image::COLOR_RED, 1.5, 2);
+        img->draw_string((w - min_len) / 2, 4, tmp_chars, image::COLOR_RED, font_scale, font_thickness);
         disp.show(*img);
         t_show = time::ticks_ms() - t3;
         t_all = time::ticks_ms() - t;

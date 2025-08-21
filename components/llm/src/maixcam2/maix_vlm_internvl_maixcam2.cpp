@@ -258,6 +258,12 @@
      void InternVL::set_system_prompt(const std::string &prompt)
      {
          _system_prompt = prompt;
+         if(_loaded)
+         {
+            InternVLObj *obj = (InternVLObj *)_data;
+            std::vector<int> _token_ids;
+            obj->lLaMa.SetSystemPrompt(_system_prompt, _token_ids);
+         }
      }
 
      int InternVL::input_width()

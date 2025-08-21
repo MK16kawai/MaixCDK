@@ -14,6 +14,7 @@
 #include <ax_sys_api.h>
 #include "LLMPostprocess.hpp"
 #include "maix_vlm_internvl.hpp"
+#include <float.h>
 
 namespace maix::nn::VLM_InternVL
 {
@@ -499,7 +500,7 @@ public:
                 auto &output_post = llama_post.get_output("output");
                 AX_SYS_MinvalidateCache(output_post.phyAddr, output_post.pVirAddr, output_post.nSize);
                 unsigned short *post_out = (unsigned short *)output_post.pVirAddr;
-                float max_val = -MAXFLOAT;
+                float max_val = FLT_MIN;
                 max_index = post_process(postprocess, post_out, _attr.tokens_embed_num, token_ids, &max_val);
             }
             next_token = max_index;
@@ -601,7 +602,7 @@ public:
                     auto &output_post = llama_post.get_output("output");
                     AX_SYS_MinvalidateCache(output_post.phyAddr, output_post.pVirAddr, output_post.nSize);
                     unsigned short *post_out = (unsigned short *)output_post.pVirAddr;
-                    float max_val = -MAXFLOAT;
+                    float max_val = FLT_MIN;
                     max_index = post_process(postprocess, post_out, _attr.tokens_embed_num, token_ids, &max_val);
                 }
                 next_token = max_index;

@@ -262,7 +262,7 @@ int ax_runner_ax650::sub_init()
             ret = prepare_io(m_handle->io_info[grpid], &m_handle->io_data[grpid], std::make_pair(AX_ENGINE_ABST_DEFAULT, AX_ENGINE_ABST_CACHED));
             if (0 != ret)
             {
-                ALOGE("prepare_io grpid=%d", grpid);
+                ALOGE("prepare_io grpid=%ld", grpid);
                 return ret;
             }
         }

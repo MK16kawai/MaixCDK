@@ -27,7 +27,7 @@ public:
     {
         _tokenizer_type = tokenizer_type;
         base_url = model_path;
-        if (!test_connect_http(base_url, 10))
+        if (!test_connect_http(base_url, 15))
         {
             ALOGE("connect %s failed", base_url.c_str());
             return false;
