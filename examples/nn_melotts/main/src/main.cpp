@@ -48,9 +48,9 @@ int _main(int argc, char *argv[])
 
     log::info("melotts start now");
     auto t = time::ticks_ms();
-    auto pcm = melotts.forward(text, wav_path, output_pcm);
+    auto pcm = melotts.infer(text, wav_path, output_pcm);
     auto t2 = time::ticks_ms();
-    log::info("melotts forward cost %d ms", t2 - t);
+    log::info("melotts infer cost %d ms", t2 - t);
     log::info("save wav file to %s", wav_path.c_str());
     if (pcm) {
         log::info("Get pcm data:%p size:%d", pcm->data, pcm->data_len);
