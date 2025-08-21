@@ -32,6 +32,26 @@ namespace maix::camera
         return std::vector<std::string>();
     }
 
+    static void __enable_os04d10_immediate_update_register(peripheral::i2c::I2C &i2c_obj, int i2c_addr, int value) {
+        uint8_t reg_val = 0;
+        uint16_t reg_addr = 0xe7;
+        uint8_t temp[1] = {0x00};
+        i2c_obj.writeto_mem(i2c_addr, 0xfd, temp, sizeof(temp), 8);   // set page 0
+        auto data = i2c_obj.readfrom_mem(i2c_addr, reg_addr, 1, 8);
+        if (!data) {
+            return;
+        }
+        #define OS04D10_REG_UPDATE_CMD_MASK (0x01)
+        reg_val = data->data[0];
+        if (value) {
+            reg_val = (reg_val & ~OS04D10_REG_UPDATE_CMD_MASK) | OS04D10_REG_UPDATE_CMD_MASK;
+        } else {
+            reg_val = (reg_val & ~OS04D10_REG_UPDATE_CMD_MASK);
+        }
+        temp[0] = reg_val;
+        i2c_obj.writeto_mem(i2c_addr, reg_addr, temp, sizeof(temp), 8);
+    }
+
     static void __get_global_info() {
         peripheral::i2c::I2C i2c_obj(0, peripheral::i2c::Mode::MASTER);
 
@@ -73,7 +93,7 @@ namespace maix::camera
                     __device_name = "ov_os04d10";
                     __sensor_size = {2560, 1440};
                     __invert_flip = true;
-                    __invert_mirror = false;
+                    __invert_mirror = true;
                     break;
                 default:
                     __device_name = "unknown";
@@ -837,6 +857,7 @@ namespace maix::camera
         break;
         case 0x3c:
         {
+            __enable_os04d10_immediate_update_register(i2c_obj, priv->i2c_addr, 1);
             uint8_t reg_val = 0;
             uint16_t reg_addr = 0x32;
             uint8_t temp[1] = {0x01};
@@ -860,6 +881,7 @@ namespace maix::camera
             } else {
 
             }
+            __enable_os04d10_immediate_update_register(i2c_obj, priv->i2c_addr, 0);
         }
         break;
         default:
@@ -931,6 +953,7 @@ namespace maix::camera
         break;
         case 0x3c:
         {
+            __enable_os04d10_immediate_update_register(i2c_obj, priv->i2c_addr, 1);
             uint8_t reg_val = 0;
             uint16_t reg_addr = 0x32;
             uint8_t temp[1] = {0x01};
@@ -954,6 +977,7 @@ namespace maix::camera
             } else {
 
             }
+            __enable_os04d10_immediate_update_register(i2c_obj, priv->i2c_addr, 0);
         }
         default:
         break;
