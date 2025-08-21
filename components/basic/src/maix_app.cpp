@@ -174,10 +174,10 @@ namespace maix::app
                 continue;
             }
             ret = ini.GetStringValue(app_id, "icon", &app_icon);
-            if (ret != RET_OK)
+            if (ret != RET_OK || app_icon.empty())
             {
-                printf("get app %s icon failed: %d\n", app_id.c_str(), ret);
-                continue;
+                printf("get app %s icon failed: %d, use default icon\n", app_id.c_str(), ret);
+                app_icon = "/maixapp/share/icon/icon.json";
             }
             if (fs::isabs(app_icon) == false)
             {

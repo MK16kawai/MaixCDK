@@ -137,9 +137,21 @@ function(register_component)
         endif()
     endforeach()
 
+    # Add definitions public
+    foreach(difinition ${ADD_LINK_DEFINITIONS})
+        if(${include_type} STREQUAL INTERFACE)
+            target_link_options(${component_name} INTERFACE ${difinition})
+        else()
+            target_link_options(${component_name} PUBLIC ${difinition})
+        endif()
+    endforeach()
+
     # Add definitions private
     foreach(difinition ${ADD_DEFINITIONS_PRIVATE})
         target_compile_options(${component_name} PRIVATE ${difinition})
+        target_link_options(${component_name} PRIVATE ${difinition})
+    endforeach()
+    foreach(difinition ${ADD_LINK_DEFINITIONS_PRIVATE})
         target_link_options(${component_name} PRIVATE ${difinition})
     endforeach()
 
