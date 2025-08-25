@@ -166,8 +166,12 @@ namespace maix::nn
                 return err::ERR_ARGS;
             }
             _inputs = _model->inputs_info();
-            _input_size = image::Size(_inputs[0].shape[3], _inputs[0].shape[2]);
+            if(_inputs[0].shape[1] <= 4)
+                _input_size = image::Size(_inputs[0].shape[3], _inputs[0].shape[2]);
+            else
+                _input_size = image::Size(_inputs[0].shape[2], _inputs[0].shape[1]);
             _feature_num = _model->outputs_info()[0].shape_int();
+            log::info("feature num: %d", _feature_num);
             return err::ERR_NONE;
         }
 
