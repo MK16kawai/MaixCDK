@@ -508,6 +508,58 @@ namespace maix::sys
         res["total"] = total_memory * 1024;
 #if PLATFORM_MAIXCAM
         res["hw_total"] = 256 * 1024 * 1024;
+        file = fopen("/sys/kernel/debug/ion/cvi_carveout_heap_dump/alloc_mem", "r");
+        if (!file)
+        {
+            log::warn("Cannot open /sys/kernel/debug/ion/cvi_carveout_heap_dump/alloc_mem");
+        }
+        else
+        {
+            unsigned long used_cmm_memory = 0;
+            while (fgets(line, sizeof(line), file))
+            {
+                int i = 0;
+                while(1)
+                {
+                    if(line[i] != ' ' && line[i] != '\t')
+                        break;
+                    ++i;
+                }
+                if (sscanf(line + i, "%ld", &used_cmm_memory) == 1)
+                {
+                    break;
+                }
+            }
+
+            fclose(file);
+            res["cmm_used"] = used_cmm_memory;
+        }
+        file = fopen("/sys/kernel/debug/ion/cvi_carveout_heap_dump/total_mem", "r");
+        if (!file)
+        {
+            log::warn("Cannot open /sys/kernel/debug/ion/cvi_carveout_heap_dump/total_mem");
+        }
+        else
+        {
+            unsigned long total_cmm_memory = 0;
+            while (fgets(line, sizeof(line), file))
+            {
+                int i = 0;
+                while(1)
+                {
+                    if(line[i] != ' ' && line[i] != '\t')
+                        break;
+                    ++i;
+                }
+                if (sscanf(line + i, "%ld", &total_cmm_memory) == 1)
+                {
+                    break;
+                }
+            }
+
+            fclose(file);
+            res["cmm_total"] = total_cmm_memory;
+        }
 #elif PLATFORM_MAIXCAM2
         file = fopen("/proc/ax_proc/mem_cmm_info", "r");
         if (!file)

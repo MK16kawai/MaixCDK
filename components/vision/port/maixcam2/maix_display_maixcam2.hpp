@@ -22,6 +22,7 @@
 #include "maix_fs.hpp"
 #include <memory>
 #include "ax_middleware.hpp"
+#include "maix_pinmap.hpp"
 
 using namespace maix::peripheral;
 using namespace maix::middleware;
@@ -170,7 +171,10 @@ namespace maix::display
             __config_vo_param(&vo_param, width, height, format, rotate);
             err::check_bool_raise(__vo->init(&vo_param) == err::ERR_NONE, "VO init failed");
             _bl_pwm = nullptr;
-            int pwm_id = 5;
+            // int pwm_id = 5; // for MaixCAM2 alpha version board
+            // pinmap::set_pin_function("B24", "PWM5")
+            int pwm_id = 3;
+            pinmap::set_pin_function("B22", "PWM3");
             _bl_pwm = new pwm::PWM(pwm_id, 10000, 50);
         }
 

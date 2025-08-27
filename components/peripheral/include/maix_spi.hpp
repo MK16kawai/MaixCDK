@@ -41,7 +41,7 @@ namespace maix::peripheral::spi
          * @param[in] bits bits of spi, int type, default is 8.
          * @param[in] hw_cs use hardware CS id, -1 means use default(e.g. for MaixCAM2 SPI2 is CS1), 0 means use CS0, 1 means use CS1 ...
          * @param[in] soft_cs use soft CS instead of hw_cs, default empty string means not use soft CS control, so you can use hw_cs or control CS pin by your self with GPIO module.
-         *                    if set GPIO name, for example GPIOA19(MaixCAM) or GPIO0_A2(MaixCAM2), this class will automatically init GPIO object and control soft CS pin when read/write.
+         *                    if set GPIO name, for example GPIOA19(MaixCAM) or GPIOA2(MaixCAM2), this class will automatically init GPIO object and control soft CS pin when read/write.
          *                    Attention, you should set GPIO's pinmap first by yourself first.
          *                    Attention, the driver may still own the hw_cs pin and perform control hw_cs, you can use pinmap to map hw_cs pin to other function to avoid this.
          * @param[in] cs_active_low CS pin low voltage means activate slave device, default true. hw_cs only support true, soft_cs support both.

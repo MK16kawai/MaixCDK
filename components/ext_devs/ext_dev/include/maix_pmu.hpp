@@ -55,13 +55,13 @@ public:
     /**
      * @brief Construct a new PMU object, will open PMU.
      *
-     * @param driver driver name, only support "axp2101".
+     * @param driver driver name, support "axp2101" "maixcam2", default empty means use default.
      * @param i2c_bus i2c bus number. Automatically selects the on-board pmu when -1 is passed in.
      * @param addr PMU i2c addr.
      *
      * @maixpy maix.ext_dev.pmu.PMU.__init__
      */
-    PMU(std::string driver = "axp2101", int i2c_bus = -1, int addr = 0x34);
+    PMU(std::string driver = "", int i2c_bus = -1, int addr = 0x34);
     ~PMU();
 
     /**

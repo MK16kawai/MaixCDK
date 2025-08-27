@@ -14,17 +14,18 @@
  {
 
     bool maix_gpio_port_parse_pin(const std::string& pin_str, int& group, int& index) {
-        // GPIO0_A4  --> 0, 4
-        // IO1_A16 --> 1, 16
-         std::regex pattern(R"(^(GPIO|IO)(\d{1,2})_A(\d{1,2})$)");
-         std::smatch match;
+        // GPIOA4  --> 0, 4
+        // IOB16 --> 1, 16
+        std::regex pattern(R"(^((GPIO)?)([A-Z])(\d{1,2})$)");
+        std::smatch match;
 
-         if (std::regex_match(pin_str, match, pattern)) {
-             group = std::stoi(match[2].str());
-             index = std::stoi(match[3].str());
-             return true;
-         }
-         return false;
+        if (std::regex_match(pin_str, match, pattern)) {
+            char group_char = match[3].str()[0];
+            group = group_char - 'A';  // 'A' -> 0, 'B' -> 1, ..., 'Z' -> 25
+            index = std::stoi(match[4].str());
+            return true;
+        }
+        return false;
      }
 
  }; // namespace maix::peripheral::gpio

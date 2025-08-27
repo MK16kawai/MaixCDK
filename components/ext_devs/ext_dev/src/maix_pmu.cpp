@@ -2,6 +2,8 @@
 #include "maix_basic.hpp"
 #include "maix_pmu.hpp"
 #include "maix_axp2101.hpp"
+#include <iostream>
+#include <string>
 
 namespace maix::ext_dev::pmu {
 
@@ -13,11 +15,33 @@ typedef struct {
 
 PMU::PMU(std::string driver, int i2c_bus, int addr)
 {
-    err::check_bool_raise(driver == "axp2101", "Only support axp2101 now");
+    const char *err_msg = "Only support axp2101 and maixcam2 now";
+    err::check_bool_raise(driver.empty() || driver == "axp2101", err_msg);
     pmu_param_t *param = (pmu_param_t *)malloc(sizeof(pmu_param_t));
     err::check_null_raise(param, "Failed to malloc param");
 
-    param->driver.axp2101 = new maix::ext_dev::axp2101::AXP2101(i2c_bus, addr);
+    if(driver.empty())
+    {
+        if(sys::device_id() == "maixcam_pro")
+            driver = "axp2101";
+        else if(sys::device_id() == "maixcam2")
+            driver = "maixcam2";
+    }
+
+    if(driver == "axp2101")
+    {
+        param->driver.axp2101 = new maix::ext_dev::axp2101::AXP2101(i2c_bus, addr);
+    }
+    else if (driver == "maixcam2")
+    {
+        // do nothing
+        // TODO: add maixcam pmu class
+    }
+    else
+    {
+        free(param);
+        err::check_bool_raise(false, err_msg);
+    }
     _param = (void *)param;
     _driver = driver;
 }
@@ -52,6 +76,10 @@ bool PMU::is_bat_connect()
     if (_driver == "axp2101") {
         ret = param->driver.axp2101->is_bat_connect();
     }
+    else if (_driver == "maixcam2")
+    {
+        return true;
+    }
     return ret;
 }
 
@@ -72,6 +100,9 @@ bool PMU::is_charging()
     if (_driver == "axp2101") {
         ret = param->driver.axp2101->is_charging();
     }
+    else if (_driver == "maixcam2") {
+        ret = get_bat_percent() != 100;
+    }
     return ret;
 }
 
@@ -82,6 +113,13 @@ int PMU::get_bat_percent()
     if (_driver == "axp2101") {
         ret = param->driver.axp2101->get_bat_percent();
     }
+    else if (_driver == "maixcam2") {
+        // read from /sys/class/power_supply/cw2015-battery/capacity
+        auto f = fs::File("/sys/class/power_supply/cw2015-battery/capacity", "r");
+        auto line = f.readline();
+        ret = std::stoi(*line);
+        delete line;
+    }
     return ret;
 }
 
@@ -91,6 +129,9 @@ ext_dev::pmu::ChargerStatus PMU::get_charger_status()
     pmu_param_t *param = (pmu_param_t *)_param;
     if (_driver == "axp2101") {
         ret = (ext_dev::pmu::ChargerStatus)param->driver.axp2101->get_charger_status();
+    }
+    else if (_driver == "maixcam2") {
+        return ext_dev::pmu::ChargerStatus::CHG_CC_STATE;
     }
     return ret;
 }

@@ -35,177 +35,177 @@
 
 
     static const std::map<std::string, PinInfo> pins_info = {
-        {"IO0_A0",
+        {"A0", // GPIO0_A0
             PinInfo {
-                std::vector<std::string> {"GPIO0_A0", "I2C6_SDA", "SPI1_MOSI"},
+                std::vector<std::string> {"GPIOA0", "I2C6_SDA", "SPI1_MOSI"},
                 PinRegInfo               {0x0230000C, 16, 3},
                 std::vector<int>         {6, 3, 2}
             }
         },
-        {"IO0_A1",
+        {"A1", // GPIO0_A1
             PinInfo {
-                std::vector<std::string> {"GPIO0_A1", "I2C6_SCL", "SPI1_MISO"},
+                std::vector<std::string> {"GPIOA1", "I2C6_SCL", "SPI1_MISO"},
                 PinRegInfo               {0x02300018, 16, 3},
                 std::vector<int>         {6, 3, 2}
             }
         },
-        {"IO0_A2",
+        {"A2", // GPIO0_A2
             PinInfo {
-                std::vector<std::string> {"GPIO0_A2", "SPI1_CS0"},
+                std::vector<std::string> {"GPIOA2", "SPI1_CS0"},
                 PinRegInfo               {0x02300024, 16, 3},
                 std::vector<int>         {6, 2}
             }
         },
-        {"IO0_A4",
+        {"A4", // GPIO0_A4
             PinInfo {
-                std::vector<std::string> {"GPIO0_A4", "SPI1_SCK", "I2C5_SDA"},
+                std::vector<std::string> {"GPIOA4", "SPI1_SCK", "I2C5_SDA"},
                 PinRegInfo               {0x0230003C, 16, 3},
                 std::vector<int>         {6, 2, 3}
             }
         },
-        {"IO0_A6",
+        {"A6", // GPIO0_A6
             PinInfo {
-                std::vector<std::string> {"GPIO0_A6"}, // state_led
+                std::vector<std::string> {"GPIOA6"}, // state_led
                 PinRegInfo               {0x02300054, 16, 3},
                 std::vector<int>         {6}
             }
         },
-        {"IO0_A8",
+        {"A8", // GPIO0_A8
             PinInfo {
-                std::vector<std::string> {"GPIO0_A8", "I2C7_SCL"},
+                std::vector<std::string> {"GPIOA8", "I2C7_SCL"},
                 PinRegInfo               {0x0230006C, 16, 3},
                 std::vector<int>         {6, 3}
             }
         },
-        {"IO0_A9",
+        {"A9", // GPIO0_A9
             PinInfo {
-                std::vector<std::string> {"GPIO0_A9", "I2C7_SDA"},
+                std::vector<std::string> {"GPIOA9", "I2C7_SDA"},
                 PinRegInfo               {0x02300078, 16, 3},
                 std::vector<int>         {6, 3}
             }
         },
-        {"IO0_A21",
+        {"A21", // GPIO0_A21
             PinInfo {
-                std::vector<std::string> {"GPIO0_A21", "UART4_TX"},
+                std::vector<std::string> {"GPIOA21", "UART4_TX"},
                 PinRegInfo               {0x02302090, 16, 3},
                 std::vector<int>         {6, 1}
             }
         },
-        {"IO0_A22",
+        {"A22", // GPIO0_A22
             PinInfo {
-                std::vector<std::string> {"GPIO0_A22", "UART4_RX"},
+                std::vector<std::string> {"GPIOA22", "UART4_RX"},
                 PinRegInfo               {0x0230209C, 16, 3},
                 std::vector<int>         {6, 1}
             }
         },
-        {"IO0_A28",
+        {"A28", // GPIO0_A28
             PinInfo {
-                std::vector<std::string> {"GPIO0_A28", "UART0_TX"},  // system log output
+                std::vector<std::string> {"GPIOA28", "UART0_TX"},  // system log output
                 PinRegInfo               {0x0230403C, 16, 3},
                 std::vector<int>         {6, 0}
             }
         },
-        {"IO0_A29",
+        {"A29", // GPIO0_A29
             PinInfo {
-                std::vector<std::string> {"GPIO0_A29", "UART0_RX"},  // system log output
+                std::vector<std::string> {"GPIOA29", "UART0_RX"},  // system log output
                 PinRegInfo               {0x02304048, 16, 3},
                 std::vector<int>         {6, 0}
             }
         },
-        {"IO0_A30",
+        {"A30", // GPIO0_A30
             PinInfo {
-                std::vector<std::string> {"GPIO0_A30", "PWM6", "UART1_TX", "SPI2_CS3"},
+                std::vector<std::string> {"GPIOA30", "PWM6", "UART1_TX", "SPI2_CS3"},
                 PinRegInfo               {0x02304054, 16, 3},
                 std::vector<int>         {6, 3, 0, 1}
             }
         },
-        {"IO0_A31",
+        {"A31", // GPIO0_A31
             PinInfo {
-                std::vector<std::string> {"GPIO0_A31", "PWM7", "UART1_RX"},
+                std::vector<std::string> {"GPIOA31", "PWM7", "UART1_RX"},
                 PinRegInfo               {0x02304060, 16, 3},
                 std::vector<int>         {6, 3, 0}
             }
         },
-        {"IO1_A0",
+        {"B0", // GPIO1_A0
             PinInfo {
-                std::vector<std::string> {"GPIO1_A0", "UART2_TX"},
+                std::vector<std::string> {"GPIOB0", "UART2_TX"},
                 PinRegInfo               {0x0230406C, 16, 3},
                 std::vector<int>         {6, 0}
             }
         },
-        {"IO1_A1",
+        {"B1", // GPIO1_A1
             PinInfo {
-                std::vector<std::string> {"GPIO1_A1", "UART2_RX"},
+                std::vector<std::string> {"GPIOB1", "UART2_RX"},
                 PinRegInfo               {0x02304078, 16, 3},
                 std::vector<int>         {6, 0}
             }
         },
-        {"IO1_A2",
+        {"B2", // GPIO1_A2
             PinInfo {
-                std::vector<std::string> {"GPIO1_A2", "PWM4", "UART3_TX", "SPI2_MOSI"},
+                std::vector<std::string> {"GPIOB2", "PWM4", "UART3_TX", "SPI2_MOSI"},
                 PinRegInfo               {0x02304084, 16, 3},
                 std::vector<int>         {6, 3, 0, 1}
             }
         },
-        {"IO1_A3",
+        {"B3", // GPIO1_A3
             PinInfo {
-                std::vector<std::string> {"GPIO1_A3", "PWM5", "UART3_RX", "SPI2_MISO"},
+                std::vector<std::string> {"GPIOB3", "PWM5", "UART3_RX", "SPI2_MISO"},
                 PinRegInfo               {0x02304090, 16, 3},
                 std::vector<int>         {6, 3, 3}
             }
         },
-        {"IO1_A18",
+        {"B18", // GPIO1_A18
             PinInfo {
-                std::vector<std::string> {"GPIO1_A18", "SPI2_MOSI"},
+                std::vector<std::string> {"GPIOB18", "SPI2_MOSI"},
                 PinRegInfo               {0x104F00CC, 16, 3},
                 std::vector<int>         {6, 4}
             }
         },
-        {"IO1_A19",
+        {"B19", // GPIO1_A19
             PinInfo {
-                std::vector<std::string> {"GPIO1_A19", "SPI2_MISO"},
+                std::vector<std::string> {"GPIOB19", "SPI2_MISO"},
                 PinRegInfo               {0x104F00D8, 16, 3},
                 std::vector<int>         {6, 4}
             }
         },
-        {"IO1_A20",
+        {"B20", // GPIO1_A20
             PinInfo {
-                std::vector<std::string> {"GPIO1_A20", "SPI2_SCK"},
+                std::vector<std::string> {"GPIOB20", "SPI2_SCK"},
                 PinRegInfo               {0x104F00E4, 16, 3},
                 std::vector<int>         {6, 4}
             }
         },
-        {"IO1_A21",
+        {"B21", // GPIO1_A21
             PinInfo {
-                std::vector<std::string> {"GPIO1_A21", "SPI2_CS1"},
+                std::vector<std::string> {"GPIOB21", "SPI2_CS1"},
                 PinRegInfo               {0x104F00F0, 16, 3},
                 std::vector<int>         {6, 4}
             }
         },
-        {"IO1_A22",
+        {"B22", // GPIO1_A22
             PinInfo {
-                std::vector<std::string> {"GPIO1_A22", "PWM3"},
+                std::vector<std::string> {"GPIOB22", "PWM3"},
                 PinRegInfo               {0x104F00FC, 16, 3},
                 std::vector<int>         {6, 2}
             }
         },
-        {"IO1_A24",
+        {"B24", // GPIO1_A24
             PinInfo {
-                std::vector<std::string> {"GPIO1_A24", "PWM5"},
+                std::vector<std::string> {"GPIOB24", "PWM5"},
                 PinRegInfo               {0x104F003C, 16, 3},
                 std::vector<int>         {6, 2}
             }
         },
-        {"IO1_A25",
+        {"B25", // GPIO1_A25
             PinInfo {
-                std::vector<std::string> {"GPIO1_A25", "PWM6"}, // LED light
+                std::vector<std::string> {"GPIOB25", "PWM6"}, // LED light
                 PinRegInfo               {0x104F0048, 16, 3},
                 std::vector<int>         {6, 2}
             }
         },
-        {"IO3_A2",
+        {"C2", // GPIO3_A2
             PinInfo {
-                std::vector<std::string> {"GPIO3_A2"}, // boot/user key
+                std::vector<std::string> {"GPIOC2"}, // boot/user key
                 PinRegInfo               {0x02302024, 16, 3},
                 std::vector<int>         {0}
             }

@@ -70,20 +70,20 @@ namespace maix::comm
 #elif PLATFORM_MAIXCAM2
         std::map<std::string, std::map<std::string, std::string>> pins_map = {
             {"uart1", {
-                {"IO0_A30", "UART1_TX"},
-                {"IO1_A3", "UART1_RX"},
+                {"A30", "UART1_TX"},
+                {"B3", "UART1_RX"},
             }},
             {"uart2", {
-                {"IO1_A0", "UART2_TX"},
-                {"IO1_A1", "UART2_RX"},
+                {"B0", "UART2_TX"},
+                {"B1", "UART2_RX"},
             }},
             {"uart3", {
-                {"IO1_A2", "UART3_TX"},
-                {"IO1_A3", "UART3_RX"},
+                {"B2", "UART3_TX"},
+                {"B3", "UART3_RX"},
             }},
             {"uart4", {
-                {"IO0_A21", "UART4_TX"},
-                {"IO0_A22", "UART4_RX"},
+                {"A21", "UART4_TX"},
+                {"A22", "UART4_RX"},
             }},
         };
 #else
