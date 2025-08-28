@@ -76,6 +76,7 @@ int _main(int argc, char *argv[])
     auto ret_img = get_back_img(cam.height());
     int font_scale = cam.height() >= 480 ? 2 : 1.2;
     int font_thickness = cam.height() >= 480 ? 2 : 1;
+    int font_h = image::string_size("As~!][]", font_scale, font_thickness).height();
 
     uint64_t t, t2, t3, t_show, t_all = 0;
     int exit_btn_pos[4] = {0, 0, ret_img->width(), ret_img->height()};
@@ -100,8 +101,10 @@ int _main(int argc, char *argv[])
             img->draw_string(r.x + font_thickness, r.y + font_thickness, detector.labels[r.class_id], maix::image::Color::from_rgb(255, 0, 0), font_scale, font_thickness);
         }
         img->draw_image(0, 0, *ret_img);
-        snprintf(tmp_chars, sizeof(tmp_chars), "All: %ldms, fps: %ld\ncam: %ldms, detect: %ldms, show: %ldms", t_all, 1000 / t_all, t2 - t, t3 - t2, t_show);
-        img->draw_string(2, img->height() - 40, tmp_chars, image::COLOR_RED, font_scale, font_thickness);
+        snprintf(tmp_chars, sizeof(tmp_chars), "All: %ldms, fps: %ld", t_all, 1000 / t_all);
+        img->draw_string(2, img->height() - font_h * 2.5, tmp_chars, image::COLOR_RED, font_scale, font_thickness);
+        snprintf(tmp_chars, sizeof(tmp_chars), "cam: %ldms, detect: %ldms, show: %ldms",  t2 - t, t3 - t2, t_show);
+        img->draw_string(2, img->height() - font_h * 1.3, tmp_chars, image::COLOR_RED, font_scale, font_thickness);
         disp.show(*img);
         t_show = time::ticks_ms() - t3;
         t_all = time::ticks_ms() - t;
