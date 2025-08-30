@@ -2,13 +2,12 @@
 #include "maix_basic.hpp"
 #include "maix_vision.hpp"
 #include "maix_touchscreen.hpp"
-#include "maix_nn_nanotrack.hpp"
-#include "maix_comm.hpp"
-#include "maix_key.hpp"
+#include "maix_nn_mixformer_v2.hpp"
 #include "main.h"
 
-
 using namespace maix;
+
+#define SHOW_TIME 1
 
 int _main(int argc, char *argv[])
 {
@@ -17,10 +16,17 @@ int _main(int argc, char *argv[])
     int ret = 0;
     char tmp_char[64];
 
+    std::string help = "Usage: " + std::string(argv[0]) + " mud_model_path";
 
-    const char *model_path = "/root/models/nanotrack.mud";
+    if (argc < 2)
+    {
+        log::info(help.c_str());
+        return -1;
+    }
 
-    nn::NanoTrack tracker(model_path);
+    const char *model_path = argv[1];
+
+    nn::MixFormerV2 tracker(model_path);
     log::info("load NanoTrack model %s success", model_path);
 
     log::info("open camera now");
@@ -43,10 +49,14 @@ int _main(int argc, char *argv[])
     uint64_t t3;
     while (!app::need_exit())
     {
+#if SHOW_TIME
         uint64_t t = time::ticks_ms();
+#endif
         maix::image::Image *img = cam.read();
         err::check_null_raise(img, "read camera failed");
+#if SHOW_TIME
         uint64_t t2 = time::ticks_ms();
+#endif
         auto touch_status = touch.read();
         if (status == 0)
         {
@@ -85,7 +95,9 @@ int _main(int argc, char *argv[])
             }
             else
                 img->draw_string(2, img->height() - font_size.height() * 2, "Select target on screen", maix::image::Color::from_rgb(255, 0, 0), 1.5);
+#if SHOW_TIME
             t3 = time::ticks_ms();
+#endif
         }
         else
         {
@@ -105,11 +117,13 @@ int _main(int argc, char *argv[])
                 pressing = false;
             }
             nn::Object r = tracker.track(*img);
+#if SHOW_TIME
             t3 = time::ticks_ms();
+#endif
             // log::info("result: %s", r.to_str().c_str());
             img->draw_rect(r.x, r.y, r.w, r.h, maix::image::Color::from_rgb(255, 0, 0), 4);
-            img->draw_rect(r.points[0], r.points[1], r.points[2], r.points[3], maix::image::Color::from_rgb(158, 158, 158), 1); // input area
-            img->draw_rect(r.points[4] - r.points[7] / 2, r.points[5] - r.points[7] / 2, r.points[7], r.points[7], maix::image::Color::from_rgb(158, 158, 158), 1); // target size
+            img->draw_rect(r.points[0], r.points[1], r.points[2], r.points[3], maix::image::Color::from_rgb(0, 0, 0), 1); // input area
+            img->draw_rect(r.points[4] - r.points[7] / 2, r.points[5] - r.points[7] / 2, r.points[7], r.points[7], maix::image::Color::from_rgb(255, 255, 255), 1); // target size
             snprintf(tmp_char, sizeof(tmp_char), "%.2f", r.score);
             img->draw_string(r.x, r.y - font_size.height() - 2, tmp_char, maix::image::Color::from_rgb(255, 0, 0), 1.5);
             img->draw_rect(disp.width() - 100, disp.height() - 60, 100, 60, maix::image::Color::from_rgb(255, 255, 255), 4);
@@ -122,7 +136,9 @@ int _main(int argc, char *argv[])
         img->draw_image(0, 0, *ret_img);
         disp.show(*img);
         delete img;
-        // log::info("time: all %d ms, track %d ms", time::ticks_ms() - t, t3 - t2);
+#if SHOW_TIME
+        log::info("time: all %d ms, track %d ms", time::ticks_ms() - t, t3 - t2);
+#endif
     }
 
     delete ret_img;
@@ -136,12 +152,6 @@ int main(int argc, char *argv[])
     // Catch SIGINT signal(e.g. Ctrl + C), and set exit flag to true.
     signal(SIGINT, [](int sig)
            { app::set_exit_flag(true); });
-
-    // support default maix communication protol commands
-    comm::add_default_comm_listener();
-
-    // default key action
-    peripheral::key::add_default_listener();
 
     // Use CATCH_EXCEPTION_RUN_RETURN to catch exception,
     // if we don't catch exception, when program throw exception, the objects will not be destructed.

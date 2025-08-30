@@ -347,12 +347,40 @@ namespace maix::image
 
         /**
          * Convert Image object to tensor::Tensor object
-         * @param chw if true, the shape of tensor is [C, H, W], else [H, W, C]
-         * @param copy if true, will alloc memory for tensor data, else will use the memory of Image object
+         * @param chw convert to tensor with CHW or HWC layout result, image is HWC,
+         *            so default chw is false, if set true, will convert to CHW layout.
+         *            Attention, if set chw to true, copy must be true, or will raise err.Exception.
+         * @param copy if true, will alloc memory for tensor data, else will use the memory of Image object.
+         *             Attention, if set chw to true, copy must be true, or will raise err.Exception.
          * @return tensor::Tensor object pointer, an allocated tensor object
          * @maixpy maix.image.Image.to_tensor
          */
         tensor::Tensor *to_tensor(bool chw = false, bool copy = true);
+
+        /**
+         * Convert image to float32 tensor, and support normlize with mean and scale(1/std).
+         * If mean and scale not empty, Will execute (data - mean) * scale, and return float32 tensor.Tensor.
+         * @attention only support grayscale, RGB, BGR, RGBA, BGRA image.
+         * @param chw convert to chw layout or not, default false.
+         * @param mean mean value, list type, can be on or three elements according to image's format. Default empty means not normalize.
+         * @param scale scale value, list type, can be on or three elements according to image's format.  Default empty means not normalize.
+         * @return float32 tensor.Tensor object with new alloc memory, so you need to delete it manually in C++.
+         * @maixpy maix.image.Image.to_tensor_float32
+         */
+         tensor::Tensor * to_tensor_float32(bool chw = false, std::vector<float> mean = {}, std::vector<float> scale = {});
+
+        /**
+         * Convert image to float32 tensor, and support normlize with mean and scale(1/std).
+         * If mean and scale not empty, Will execute (data - mean) * scale, and return float32 tensor.Tensor.
+         * @attention only support grayscale, RGB, BGR, RGBA, BGRA image.
+         * @param tensor_result output tensor, address of Tensor pointer, if nullptr, this func will alloc Tensor object, then you need to delete object by yourself.
+         *                      If not nullptr, will directly use its float32 data and not alloc again.
+         * @param chw convert to chw layout or not, default false.
+         * @param mean mean value, list type, can be on or three elements according to image's format. Default empty means not normalize.
+         * @param scale scale value, list type, can be on or three elements according to image's format.  Default empty means not normalize.
+         * @maixcdk maix.image.Image.to_tensor_float32
+         */
+         void to_tensor_float32(tensor::Tensor **tensor_result, bool chw = false, std::vector<float> mean = {}, std::vector<float> scale = {});
 
         /**
          * Get image's data and convert to array bytes

@@ -578,13 +578,229 @@ namespace maix::image
         if (copy)
         {
             t = new tensor::Tensor(shape, tensor::UINT8, nullptr);
-            memcpy(t->data(), data, t->size_int() * tensor::dtype_size[t->dtype()]);
+            int channels = (int)image::fmt_size[_format];
+            if(channels<=1 || !chw)
+                memcpy(t->data(), data, t->size_int() * tensor::dtype_size[t->dtype()]);
+            else
+            {
+                uint8_t *src = reinterpret_cast<uint8_t *>(data);
+                uint8_t *dst = reinterpret_cast<uint8_t *>(t->data());
+
+                for (int c = 0; c < channels; c++)
+                {
+                    for (int h = 0; h < _height; h++)
+                    {
+                        for (int w = 0; w < _width; w++)
+                        {
+                            dst[c * _height * _width + h * _width + w] =
+                                src[h * _width * channels + w * channels + c];
+                        }
+                    }
+                }
+            }
         }
         else
         {
-            t = new tensor::Tensor(shape, tensor::UINT8, data);
+            if(!chw)
+                t = new tensor::Tensor(shape, tensor::UINT8, data);
+            else
+            {
+                throw err::Exception(err::Err::ERR_ARGS, "to_tensor: chw=true requires copy=true");
+            }
         }
         return t;
+    }
+
+    void Image::to_tensor_float32(tensor::Tensor **tensor_result, bool chw, std::vector<float> mean, std::vector<float> scale)
+    {
+        void *data = _data;
+        std::vector<int> shape;
+        int channels = 1;
+
+        if (_format == image::FMT_GRAYSCALE)
+        {
+            shape = chw ? std::vector<int>{1, _height, _width}
+                        : std::vector<int>{_height, _width, 1};
+            channels = 1;
+        }
+        else if (_format < image::FMT_YUV422SP)
+        {
+            channels = (int)image::fmt_size[_format];
+            shape = chw ? std::vector<int>{channels, _height, _width}
+                        : std::vector<int>{_height, _width, channels};
+        }
+        else
+        {
+            throw err::Exception(err::Err::ERR_ARGS, "to_tensor_float32: only support GRAYSCALE/RGB-like format now");
+        }
+        if (channels > 4)
+        {
+            throw err::Exception(err::Err::ERR_ARGS, "to_tensor_float32: only support GRAYSCALE/RGB-like format now");
+        }
+        if(!*tensor_result)
+        {
+            *tensor_result = new tensor::Tensor(shape, tensor::FLOAT32);
+            if(!*tensor_result)
+            {
+                throw err::Exception(err::Err::ERR_NO_MEM, "alloc for to_tensor_float32 failed");
+            }
+        }
+        uint8_t *src = reinterpret_cast<uint8_t *>(data);
+        float *dst = reinterpret_cast<float *>((*tensor_result)->data());
+        if(mean.size() != scale.size())
+        {
+            throw err::Exception(err::Err::ERR_ARGS, "mean and scale size not same");
+        }
+        bool normalize = !(mean.empty() || scale.empty());
+        if(!normalize)
+        {
+            if(channels == 1 || !chw)
+            {
+                #pragma omp parallel for
+                for (int i = 0; i < _height * _width * channels; ++i)
+                {
+                    dst[i] = static_cast<float>(src[i]);
+                }
+            }
+            else if(channels == 3) // chw
+            {
+                int layer_size = _height * _width;
+                int layer_size_x2 = _height * _width * 2;
+                #pragma omp parallel for collapse(2)
+                for (int h = 0; h < _height; h++)
+                {
+                    for (int w = 0; w < _width; w++)
+                    {
+                            int offset = h * _width + w;
+                            int idx = offset * 3;
+                            dst[offset] = static_cast<float>(src[idx]);
+                            dst[offset + layer_size] = static_cast<float>(src[idx + 1]);
+                            dst[offset + layer_size_x2] = static_cast<float>(src[idx + 2]);
+                    }
+                }
+            }
+            else if(channels == 4) // chw
+            {
+                int layer_size = _height * _width;
+                int layer_size_x2 = _height * _width * 2;
+                int layer_size_x3 = _height * _width * 3;
+                #pragma omp parallel for collapse(2)
+                for (int h = 0; h < _height; h++)
+                {
+                    for (int w = 0; w < _width; w++)
+                    {
+                        int offset = h * _width + w;
+                        int idx = offset * 4;
+                        dst[offset] = static_cast<float>(src[idx]);
+                        dst[offset + layer_size] = static_cast<float>(src[idx + 1]);
+                        dst[offset + layer_size_x2] = static_cast<float>(src[idx + 2]);
+                        dst[offset + layer_size_x3] = static_cast<float>(src[idx + 3]);
+                    }
+                }
+            }
+        }
+        else
+        {
+            // check mean scale
+            if(mean.size() < channels)
+            {
+                float last_value = mean[mean.size() - 1];
+                for(size_t i=mean.size(); i<channels; ++i)
+                    mean.push_back(last_value);
+            }
+            if(scale.size() < channels)
+            {
+                float last_value = scale[scale.size() - 1];
+                for(size_t i=scale.size(); i<channels; ++i)
+                    scale.push_back(last_value);
+            }
+
+            // normlize
+            if (channels == 1 || !chw)
+            {
+                if(channels == 1)
+                {
+                    #pragma omp parallel for
+                    for (int i = 0; i < _height * _width; ++i)
+                    {
+                        dst[i] = (static_cast<float>(src[i]) - mean[0]) * scale[0];
+                    }
+                }
+                else if(channels == 3)
+                {
+                    #pragma omp parallel for collapse(2)
+                    for (int h = 0; h < _height; h++)
+                    {
+                        for (int w = 0; w < _width; w++)
+                        {
+                                int idx = (h * _width + w) * 3;
+                                dst[idx] = (static_cast<float>(src[idx]) - mean[0]) * scale[0];
+                                dst[idx + 1] = (static_cast<float>(src[idx + 1]) - mean[1]) * scale[1];
+                                dst[idx + 2] = (static_cast<float>(src[idx + 2]) - mean[2]) * scale[2];
+                        }
+                    }
+                }
+                else // 4 channels
+                {
+                    #pragma omp parallel for collapse(2)
+                    for (int h = 0; h < _height; h++)
+                    {
+                        for (int w = 0; w < _width; w++)
+                        {
+                            int idx = (h * _width + w) * 4;
+                            dst[idx] = (static_cast<float>(src[idx]) - mean[0]) * scale[0];
+                            dst[idx + 1] = (static_cast<float>(src[idx + 1]) - mean[1]) * scale[1];
+                            dst[idx + 2] = (static_cast<float>(src[idx + 2]) - mean[2]) * scale[2];
+                            dst[idx + 3] = (static_cast<float>(src[idx + 3]) - mean[3]) * scale[3];
+                        }
+                    }
+                }
+            }
+            else if(channels == 3) // chw
+            {
+                int layer_size = _height * _width;
+                int layer_size_x2 = _height * _width * 2;
+                #pragma omp parallel for collapse(2)
+                for (int h = 0; h < _height; h++)
+                {
+                    for (int w = 0; w < _width; w++)
+                    {
+                            int offset = h * _width + w;
+                            int idx = offset * 3;
+                            dst[offset] = (static_cast<float>(src[idx]) - mean[0]) * scale[0];
+                            dst[offset + layer_size] = (static_cast<float>(src[idx + 1]) - mean[1]) * scale[1];
+                            dst[offset + layer_size_x2] = (static_cast<float>(src[idx + 2]) - mean[2]) * scale[2];
+                    }
+                }
+            }
+            else if(channels == 4) // chw
+            {
+                int layer_size = _height * _width;
+                int layer_size_x2 = _height * _width * 2;
+                int layer_size_x3 = _height * _width * 3;
+                #pragma omp parallel for collapse(2)
+                for (int h = 0; h < _height; h++)
+                {
+                    for (int w = 0; w < _width; w++)
+                    {
+                        int offset = h * _width + w;
+                        int idx = offset * 4;
+                        dst[offset] = (static_cast<float>(src[idx]) - mean[0]) * scale[0];
+                        dst[offset + layer_size] = (static_cast<float>(src[idx + 1]) - mean[1]) * scale[1];
+                        dst[offset + layer_size_x2] = (static_cast<float>(src[idx + 2]) - mean[2]) * scale[2];
+                        dst[offset + layer_size_x3] = (static_cast<float>(src[idx + 3]) - mean[3]) * scale[3];
+                    }
+                }
+            }
+        }
+    }
+
+
+    tensor::Tensor *Image::to_tensor_float32(bool chw, std::vector<float> mean, std::vector<float> scale)
+    {
+        tensor::Tensor *result = nullptr;
+        to_tensor_float32(&result, chw, mean, scale);
+        return result;
     }
 
     image::Image *Image::to_format(const image::Format &format, void *buff, size_t buff_size)
