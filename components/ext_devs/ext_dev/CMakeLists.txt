@@ -8,6 +8,7 @@ list(APPEND ADD_PRIVATE_INCLUDE "src/tmc2209")
 list(APPEND ADD_PRIVATE_INCLUDE "src/tmc2209/janelia-arduino_TMC2209")
 list(APPEND ADD_PRIVATE_INCLUDE "src/axp2101")
 list(APPEND ADD_PRIVATE_INCLUDE "src/cmap")
+list(APPEND ADD_PRIVATE_INCLUDE "src/lsm6dsowtr")
 
 append_srcs_dir(ADD_SRCS "src")
 append_srcs_dir(ADD_SRCS "src/bm8563")
@@ -19,6 +20,7 @@ append_srcs_dir(ADD_SRCS "src/tmc2209/janelia-arduino_TMC2209")
 append_srcs_dir(ADD_SRCS "src/axp2101")
 append_srcs_dir(ADD_SRCS "src/fp5510")
 append_srcs_dir(ADD_SRCS "src/cmap")
+append_srcs_dir(ADD_SRCS "src/lsm6dsowtr")
 
 list(APPEND ADD_REQUIREMENTS basic peripheral json ahrs)
 

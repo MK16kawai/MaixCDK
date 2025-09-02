@@ -43,13 +43,20 @@ enum class AccOdr {
     ACC_ODR_4000,      // Accelerometer ODR set to 4000 Hz.
     ACC_ODR_2000,      // Accelerometer ODR set to 2000 Hz.
     ACC_ODR_1000,      // Accelerometer ODR set to 1000 Hz.
+    ACC_ODR_833,       // Accelerometer ODR set to 833 Hz.
     ACC_ODR_500,       // Accelerometer ODR set to 500 Hz.
+    ACC_ODR_416,       // Accelerometer ODR set to 416 Hz.
     ACC_ODR_250,       // Accelerometer ODR set to 250 Hz.
+    ACC_ODR_208,       // Accelerometer ODR set to 208 Hz.
+    ACC_ODR_128,       // Accelerometer ODR set to 128 Hz.
     ACC_ODR_125,       // Accelerometer ODR set to 125 Hz.
+    ACC_ODR_104,       // Accelerometer ODR set to 104 Hz.
     ACC_ODR_62_5,      // Accelerometer ODR set to 62.5 Hz.
+    ACC_ODR_52,        // Accelerometer ODR set to 52 Hz.
     ACC_ODR_31_25,     // Accelerometer ODR set to 31.25 Hz.
-    ACC_ODR_128 = 12,  // Accelerometer ODR set to 128 Hz.
+    ACC_ODR_26,        // Accelerometer ODR set to 26 Hz.
     ACC_ODR_21,        // Accelerometer ODR set to 21 Hz.
+    ACC_ODR_12_5,      // Accelerometer ODR set to 12.5 Hz.
     ACC_ODR_11,        // Accelerometer ODR set to 11 Hz.
     ACC_ODR_3,         // Accelerometer ODR set to 3 Hz.
 };
@@ -62,10 +69,15 @@ enum class GyroScale {
     GYRO_SCALE_16DPS = 0,       // Gyroscope scale set to ±16 degrees per second.
     GYRO_SCALE_32DPS,            // Gyroscope scale set to ±32 degrees per second.
     GYRO_SCALE_64DPS,            // Gyroscope scale set to ±64 degrees per second.
+    GYRO_SCALE_125DPS,           // Gyroscope scale set to ±125 degrees per second.
     GYRO_SCALE_128DPS,           // Gyroscope scale set to ±128 degrees per second.
+    GYRO_SCALE_250DPS,           // Gyroscope scale set to ±250 degrees per second.
     GYRO_SCALE_256DPS,           // Gyroscope scale set to ±256 degrees per second.
+    GYRO_SCALE_500DPS,           // Gyroscope scale set to ±500 degrees per second.
     GYRO_SCALE_512DPS,           // Gyroscope scale set to ±512 degrees per second.
+    GYRO_SCALE_1000DPS,          // Gyroscope scale set to ±1000 degrees per second.
     GYRO_SCALE_1024DPS,          // Gyroscope scale set to ±1024 degrees per second.
+    GYRO_SCALE_2000DPS,          // Gyroscope scale set to ±2000 degrees per second.
     GYRO_SCALE_2048DPS,          // Gyroscope scale set to ±2048 degrees per second.
 };
 
@@ -78,11 +90,18 @@ enum class GyroOdr {
     GYRO_ODR_4000,     // Gyroscope ODR set to 4000 Hz.
     GYRO_ODR_2000,     // Gyroscope ODR set to 2000 Hz.
     GYRO_ODR_1000,     // Gyroscope ODR set to 1000 Hz.
+    GYRO_ODR_833,      // Gyroscope ODR set to 833 Hz.
     GYRO_ODR_500,      // Gyroscope ODR set to 500 Hz.
+    GYRO_ODR_416,      // Gyroscope ODR set to 416 Hz.
     GYRO_ODR_250,      // Gyroscope ODR set to 250 Hz.
     GYRO_ODR_125,      // Gyroscope ODR set to 125 Hz.
+    GYRO_ODR_208,       // Gyroscope ODR set to 208 Hz.
+    GYRO_ODR_104,       // Gyroscope ODR set to 104 Hz.
     GYRO_ODR_62_5,     // Gyroscope ODR set to 62.5 Hz.
+    GYRO_ODR_52,       // Gyroscope ODR set to 52 Hz.
+    GYRO_ODR_26,       // Gyroscope ODR set to 26 Hz.
     GYRO_ODR_31_25,    // Gyroscope ODR set to 31.25 Hz.
+    GYRO_ODR_12_5,    // Gyroscope ODR set to 12.5 Hz.
 };
 
 /**

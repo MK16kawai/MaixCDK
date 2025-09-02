@@ -11,11 +11,13 @@ static void helper(void)
     log::info(
     "==================================\r\n"
     "Please input command:\r\n"
-    "0 <path> : read imu data and save in gcsv format\r\n"
+    "0 : read imu data and print\r\n"
     "1 : caculate calibration\r\n"
+    "2 <path>  : read imu data and save in gcsv format\r\n"
     "\r\n"
-    "Example: ./maix_imu 0 output.mp4\r\n"
+    "Example: ./maix_imu 0\r\n"
     "Example: ./maix_imu 1\r\n"
+    "Example: ./maix_imu 2 <output.mp4>\r\n"
     "==================================\r\n");
 }
 
@@ -37,7 +39,32 @@ int _main(int argc, char* argv[])
     switch (cmd) {
     case 0:
     {
-        imu::IMU imu("qmi8658");
+        imu::IMU imu("default");
+        while (!app::need_exit()) {
+            auto res = imu.read();
+            printf("\n");
+            log::info("------------------------");
+            printf("acc x:  %f\t", res[0]);
+            printf("acc y:  %f\t", res[1]);
+            printf("acc z:  %f\n", res[2]);
+            printf("gyro x: %f (%f)\t", res[3], res[3] * M_PI / 180);
+            printf("gyro y: %f (%f)\t", res[4], res[4] * M_PI / 180);
+            printf("gyro z: %f (%f)\n", res[5], res[5] * M_PI / 180);
+            printf("temp:   %f\n", res[6]);
+            log::info("------------------------\n");
+            time::sleep_ms(500);
+        }
+    }
+    break;
+    case 1:
+    {
+        imu::IMU imu("default");
+        imu.calculate_calibration();
+    }
+    break;
+    case 2:
+    {
+        imu::IMU imu("default");
         imu::Gcsv gcsv = imu::Gcsv();
         double t_scale = 0.001;
         double g_scale = ((double)1024 * M_PI / 180) / 32768;
@@ -63,12 +90,6 @@ int _main(int argc, char* argv[])
             gcsv.write(t, g, a);
             time::sleep_ms(500);
         }
-    }
-    break;
-    case 1:
-    {
-        imu::IMU imu("qmi8658");
-        imu.calculate_calibration();
     }
     break;
     default:

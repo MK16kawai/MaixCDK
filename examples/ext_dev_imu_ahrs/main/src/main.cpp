@@ -116,7 +116,7 @@ void draw_image(image::Image &img, tensor::Vector3f &angle, bool dir_cam)
 
 void show_msg(display::Display &disp, std::string &msg)
 {
-    auto img = image::Image(disp.width(), disp.height());
+    auto img = image::Image(disp.width(), disp.height(), image::FMT_RGB888, image::COLOR_BLACK);
     auto size = image::string_size(msg, 1.5);
     img.draw_string((img.width() - size.width()) / 2, (img.height() - size.height()) / 2, msg, image::COLOR_WHITE, 1.5);
     disp.show(img);
@@ -192,7 +192,7 @@ int _main(int argc, char* argv[])
         // printf("%s\n", temp_char);
 
         // show on image
-        auto img = image::Image(disp.width(), disp.height());
+        auto img = image::Image(disp.width(), disp.height(), image::FMT_RGB888, image::COLOR_BLACK);
         img.draw_string(2, 4, temp_char, image::COLOR_WHITE, 1.5);
         snprintf(temp_char, sizeof(temp_char), "dt: %3dms, temp: %4.1f", (int)(dt * 1000), data.temp);
         img.draw_string(2, 4+32, temp_char, image::COLOR_WHITE, 1.5);

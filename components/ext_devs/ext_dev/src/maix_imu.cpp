@@ -2,6 +2,7 @@
 #include "maix_basic.hpp"
 #include "maix_imu.hpp"
 #include "maix_qmi8658.hpp"
+#include "maix_lsm6dsowtr.hpp"
 #include "maix_ahrs_type.hpp"
 #include <nlohmann/json.hpp>
 #include <fstream>
@@ -16,12 +17,14 @@ namespace maix::ext_dev::imu {
 
 enum class driver_type
 {
-    qmi8658
+    qmi8658,
+    lsm6dsowtr,
 };
 
 typedef struct {
     union {
         maix::ext_dev::qmi8658::QMI8658 *qmi8658;
+        maix::ext_dev::lsm6dsowtr::LSM6DSOWTR *lsm6dsowtr;
     } driver;
     double bias[6];
     driver_type type;
@@ -100,11 +103,17 @@ IMU::IMU(std::string driver, int i2c_bus, int addr, int freq, imu::Mode mode, im
         {
             param->type = driver_type::qmi8658;
             found = true;
+        } else if(sys::device_id() == "maixcam2") {
+            param->type = driver_type::lsm6dsowtr;
+            found = true;
         }
     }
     else if(driver == "qmi8658")
     {
         param->type = driver_type::qmi8658;
+        found = true;
+    } else if (driver == "lsm6dsowtr") {
+        param->type = driver_type::lsm6dsowtr;
         found = true;
     }
 
@@ -125,7 +134,17 @@ IMU::IMU(std::string driver, int i2c_bus, int addr, int freq, imu::Mode mode, im
     }
     // log::info("load calibration data: {%f, %f, %f, %f, %f, %f}",
     //         param->bias[0], param->bias[1], param->bias[2], param->bias[3], param->bias[4], param->bias[5]);
-    param->driver.qmi8658 = new maix::ext_dev::qmi8658::QMI8658(i2c_bus, addr, freq, mode, acc_scale, acc_odr, gyro_scale, gyro_odr, block);
+    switch (param->type) {
+    case driver_type::qmi8658:
+        param->driver.qmi8658 = new maix::ext_dev::qmi8658::QMI8658(i2c_bus, addr, freq, mode, acc_scale, acc_odr, gyro_scale, gyro_odr, block);
+        break;
+    case driver_type::lsm6dsowtr:
+        param->driver.lsm6dsowtr = new maix::ext_dev::lsm6dsowtr::LSM6DSOWTR(mode, acc_scale, acc_odr, gyro_scale, gyro_odr, block);
+        break;
+    default:
+        throw err::Exception("Unsupported driver type");
+        break;
+    }
 }
 
 IMU::~IMU()
@@ -135,6 +154,9 @@ IMU::~IMU()
         if (_driver == "qmi8658") {
             delete param->driver.qmi8658;
             param->driver.qmi8658 = NULL;
+        } else if (_driver == "lsm6dsowtr") {
+            delete param->driver.lsm6dsowtr;
+            param->driver.lsm6dsowtr = NULL;
         }
         free(_param);
         _param = NULL;
@@ -147,6 +169,8 @@ std::vector<float> IMU::read()
     imu_param_t *param = (imu_param_t *)_param;
     if (param->type == driver_type::qmi8658) {
         out = param->driver.qmi8658->read();
+    } else if (param->type == driver_type::lsm6dsowtr) {
+        out = param->driver.lsm6dsowtr->read();
     }
     return out;
 }
