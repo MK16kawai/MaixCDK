@@ -255,7 +255,12 @@ namespace maix::nn
          * Track object acoording to last object position and the init function learned target feature.
          * @param img image to detect object and track, can be any resolution, before detect it will crop a area according to last time target's position.
          * @param threshold If score < threshold, will see this new detection is invalid, but remain return this new detecion,  default 0.9.
-         * @return object, position and score, and detect area in points's first 4 element(x, y, w, h, center_x, center_y, input_size, target_size)
+         * @return object, attribute [x, y, w, h] and score are the predict target position and score, points attribute provide more info:
+         *         0~3  [ search_x, search_y, search_w, search_h ]: search area for this time track, based on last correct start position.
+         *         4~5  [ predict_cx, predict_cy]: predict center according to this time input.
+         *         6    [ search_size ]: search_area size based on last correct start position, center is (search_x - search_w / 2, search_y - search_h / 2).
+         *         7    [ predict_template_size ]: template size based on predict target, center is (predict_cx, predict_cy).
+         *         8~11 [ correct_cx, correct_cy, correct_w, correct_h]: latest correct (score > threshold) target position.
          * @maixpy maix.nn.NanoTrack.track
         */
         nn::Object track(image::Image &img, float threshold = 0.9)
@@ -361,7 +366,7 @@ namespace maix::nn
             _head_inputs.rm_tensor("input2");
             delete outputs2;
             nn::Object res(cx - w / 2, cy - h / 2, w, h, 0, max_score);
-            res.points.resize(8);
+            res.points.resize(12);
             res.points.at(0) = crop_x_x1;
             res.points.at(1) = crop_x_y1;
             res.points.at(2) = crop_x_x2 - crop_x_x1;
@@ -370,6 +375,10 @@ namespace maix::nn
             res.points.at(5) = cy;
             res.points.at(6) = size_x;
             res.points.at(7) = size_target;
+            res.points.at(8) = _last_target.x;
+            res.points.at(9) = _last_target.y;
+            res.points.at(10) = _last_target.w;
+            res.points.at(11) = _last_target.h;
             return res;
         }
 

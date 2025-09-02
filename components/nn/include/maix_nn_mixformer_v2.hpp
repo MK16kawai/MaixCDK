@@ -25,23 +25,31 @@ namespace maix::nn
         /**
          * Constructor of MixFormerV2 class
          * @param model model path, default empty, you can load model later by load function.
+         * @param update_interval update online template interval in framsed, default 200 frames
+         * @param lost_find_interval auto find lose target in global after lose target lost_find_interval frames, -1 means not use.
+         *                           In some scene, this is useful to get back target, but if always find wrong target after target lost, you should disable this.
          * @throw If model arg is not empty and load failed, will throw err::Exception.
          * @maixpy maix.nn.MixFormerV2.__init__
          * @maixcdk maix.nn.MixFormerV2.MixFormerV2
          */
-         MixFormerV2(const string &model = "")
+         MixFormerV2(const string &model = "", int update_interval = 200, int lost_find_interval = 60)
         {
             _model = nullptr;
             _dual_buff = false;
             _template_input = nullptr;
             _template_online_input = nullptr;
+            _template_online_input_temp = nullptr;
             _search_input = nullptr;
             _last_template_crop_size = 0;
+            _max_score = -1;
+            frame_id = 0;
+            _use_temp_last_pos = false;
+            this->update_interval = update_interval;
+            this->lost_find_interval = lost_find_interval;
 
             // mixformer params
             _search_factor = 4.5;
             _template_factor = 2.0;
-            _template_update_interval = 200; // ms
 
             // load model
             if (!model.empty())
@@ -65,6 +73,11 @@ namespace maix::nn
             {
                 delete _template_online_input;
                 _template_online_input = nullptr;
+            }
+            if (_template_online_input_temp)
+            {
+                delete _template_online_input_temp;
+                _template_online_input_temp = nullptr;
             }
             if (_search_input)
             {
@@ -232,25 +245,44 @@ namespace maix::nn
             _last_target.y = c_y; // center, not left-top
             _last_target.w = w;
             _last_target.h = h;
+
+            _max_score = -1;
+            frame_id = 0;
         }
 
         /**
          * Track object acoording to last object position and the init function learned target feature.
          * @param img image to detect object and track, can be any resolution, before detect it will crop a area according to last time target's position.
          * @param threshold If score < threshold, will see this new detection is invalid, but remain return this new detecion,  default 0.9.
-         * @return object, position and score, and detect area in points's first 4 element(x, y, w, h, center_x, center_y, input_size, target_size)
+         * @return object, attribute [x, y, w, h] and score are the predict target position and score, points attribute provide more info:
+         *         0~3  [ search_x, search_y, search_w, search_h ]: search area for this time track, based on last correct start position.
+         *         4~5  [ predict_cx, predict_cy]: predict center according to this time input.
+         *         6    [ search_size ]: search_area size based on last correct start position, center is (search_x - search_w / 2, search_y - search_h / 2).
+         *         7    [ predict_template_size ]: template size based on predict target, center is (predict_cx, predict_cy).
+         *         8~11 [ correct_cx, correct_cy, correct_w, correct_h]: latest correct (score > threshold) target position.
          * @maixpy maix.nn.MixFormerV2.track
         */
-        nn::Object track(image::Image &img, float threshold = 0.9)
+        nn::Object track(image::Image &img, float threshold = 0.5)
         {
             if (img.format() != _input_img_fmt)
             {
                 throw err::Exception("image format not match, input_type: " + image::fmt_names[_input_img_fmt] + ", image format: " + image::fmt_names[img.format()]);
             }
+
+            ++frame_id;
+
             // crop search area input tensor
             // printf("last: %d %d %d %d\n", _last_target.x, _last_target.y, _last_target.w, _last_target.h);
-            int crop_size = _get_crop_size(_last_target.w, _last_target.h, _search_factor);
-            auto crop_info = _get_input(img, _last_target.x, _last_target.y, crop_size, _input_size.width(), _input_size.height(), &_search_input);
+            int last_target_cx = _last_target.x, last_target_cy = _last_target.y, last_target_w = _last_target.w, last_target_h = _last_target.h;
+            if(_use_temp_last_pos)
+            {
+                last_target_cx = _temp_last_target.x;
+                last_target_cy = _temp_last_target.y;
+                last_target_w = _temp_last_target.w;
+                last_target_h = _temp_last_target.h;
+            }
+            int crop_size = _get_crop_size(last_target_w, last_target_h, _search_factor);
+            auto crop_info = _get_input(img, last_target_cx, last_target_cy, crop_size, _input_size.width(), _input_size.height(), &_search_input);
 
             // forward
             tensor::Tensors inputs;
@@ -287,19 +319,47 @@ namespace maix::nn
             delete outputs;
 
             // update status
+            _use_temp_last_pos = false;
+            int crop_size_template = _get_crop_size(w, h, _template_factor);
             if(score >= threshold)
             {
                 _last_target.x = cx;
                 _last_target.y = cy;
                 _last_target.w = w;
                 _last_target.h = h;
+                if(score > _max_score) // record as online template
+                {
+                    _get_input(img, cx, cy, crop_size_template, _input_size_template.width(), _input_size_template.height(), &_template_online_input_temp);
+                    _max_score = score;
+                    if(frame_id % update_interval == 0)
+                    {
+                        auto temp = _template_online_input;
+                        _template_online_input = _template_online_input_temp;
+                        _template_online_input_temp = temp;
+                        _last_template_crop_size = crop_size_template;
+                    }
+                }
+                _miss_count = 0;
             }
-            int crop_size_template = _get_crop_size(_last_target.w, _last_target.h, _template_factor);
+            else
+            {
+                ++_miss_count;
+                if(lost_find_interval > 0 && _miss_count > (uint64_t)lost_find_interval)
+                {
+                    _use_temp_last_pos = true;
+                    _temp_last_target.x = img.width() / 2;
+                    _temp_last_target.y = img.height() / 2;
+                    int new_crop_size = max(img.width(), img.height());
+                    _temp_last_target.w = new_crop_size / _search_factor;
+                    _temp_last_target.h = _temp_last_target.w;
+                    _miss_count = _miss_count / 2;
+                }
+            }
 
             // clear data
             // nn::Object res(_last_target.x - _last_target.w / 2, _last_target.y - _last_target.h / 2, _last_target.w, _last_target.h, 0, score);
             nn::Object res(cx - w / 2, cy - h / 2, w, h, 0, score);
-            res.points.resize(8);
+            res.points.resize(12);
             res.points.at(0) = (int)(crop_info[0]);
             res.points.at(1) = (int)(crop_info[1]);
             res.points.at(2) = (int)(crop_info[2] - crop_info[0]);
@@ -308,6 +368,10 @@ namespace maix::nn
             res.points.at(5) = cy;
             res.points.at(6) = crop_size;
             res.points.at(7) = crop_size_template;
+            res.points.at(8) = _last_target.x;
+            res.points.at(9) = _last_target.y;
+            res.points.at(10) = _last_target.w;
+            res.points.at(11) = _last_target.h;
             return res;
         }
 
@@ -364,11 +428,29 @@ namespace maix::nn
          */
         std::vector<float> scale;
 
+        /**
+         * Current frame_id
+         * @maixpy maix.nn.MixFormerV2.frame_id
+         */
+        uint64_t frame_id;
+
+        /**
+         * update online template interval in frames
+         * @maixpy maix.nn.MixFormerV2.update_interval
+         */
+        int update_interval;
+
+        /**
+         * Auto find target after lost lost_find_interval frames, -1 means not auto find.
+         * In some scene, this is useful to get back target, but if always find wrong target after target lost, you should disable this.
+         * @maixpy maix.nn.MixFormerV2.lost_find_interval
+         */
+        int lost_find_interval;
+
     private:
         nn::NN *_model;
         float _search_factor;
         float _template_factor;
-        float _template_update_interval; // ms
         image::Size _input_size;
         image::Size _input_size_template;
         image::Format _input_img_fmt;
@@ -376,9 +458,14 @@ namespace maix::nn
         bool _dual_buff;
         tensor::Tensor *_template_input;
         tensor::Tensor *_template_online_input;
+        tensor::Tensor *_template_online_input_temp;
         tensor::Tensor *_search_input;
         int _last_template_crop_size;
         nn::Object _last_target;
+        float _max_score;
+        bool _use_temp_last_pos;
+        uint64_t _miss_count;
+        nn::Object _temp_last_target;
 
     private:
         inline int _get_crop_size(int w, int h, float scale_factor)
@@ -402,7 +489,7 @@ namespace maix::nn
                 img_target = img_target_resized;
             }
             bool chw = true;
-            img.draw_image(0, 0, *img_target);
+            // img.draw_image(0, 0, *img_target);
             img_target->to_tensor_float32(out_tensor, chw, this->mean, this->scale);
             if((*out_tensor)->shape().size() != 4)
                 (*out_tensor)->expand_dims(0);

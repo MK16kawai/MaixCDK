@@ -25,8 +25,11 @@ int _main(int argc, char *argv[])
     }
 
     const char *model_path = argv[1];
+    float threshold = 0.5;
+    int update_interval = 200;    // frames
+    int lost_find_interval = 60;  // auto find target after lost lost_find_interval frames, -1 to disable
 
-    nn::MixFormerV2 tracker(model_path);
+    nn::MixFormerV2 tracker(model_path, update_interval, lost_find_interval);
     log::info("load NanoTrack model %s success", model_path);
 
     log::info("open camera now");
@@ -116,14 +119,15 @@ int _main(int argc, char *argv[])
                 }
                 pressing = false;
             }
-            nn::Object r = tracker.track(*img);
+            nn::Object r = tracker.track(*img, threshold);
 #if SHOW_TIME
             t3 = time::ticks_ms();
 #endif
             // log::info("result: %s", r.to_str().c_str());
             img->draw_rect(r.x, r.y, r.w, r.h, maix::image::Color::from_rgb(255, 0, 0), 4);
-            img->draw_rect(r.points[0], r.points[1], r.points[2], r.points[3], maix::image::Color::from_rgb(0, 0, 0), 1); // input area
+            img->draw_rect(r.points[0], r.points[1], r.points[2], r.points[3], maix::image::COLOR_ORANGE, 1); // input area
             img->draw_rect(r.points[4] - r.points[7] / 2, r.points[5] - r.points[7] / 2, r.points[7], r.points[7], maix::image::Color::from_rgb(255, 255, 255), 1); // target size
+            img->draw_rect(r.points[8] - r.points[10] / 2, r.points[9] - r.points[11] / 2, r.points[10], r.points[11], maix::image::Color::from_rgb(0, 255, 0), 4);
             snprintf(tmp_char, sizeof(tmp_char), "%.2f", r.score);
             img->draw_string(r.x, r.y - font_size.height() - 2, tmp_char, maix::image::Color::from_rgb(255, 0, 0), 1.5);
             img->draw_rect(disp.width() - 100, disp.height() - 60, 100, 60, maix::image::Color::from_rgb(255, 255, 255), 4);
