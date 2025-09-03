@@ -574,7 +574,7 @@ namespace maix::nn
             }
             for (int y = copy_y1; y < copy_y2; ++y)
             {
-                memset(data + ((y - y1) * res->width() + copy_x2) * 3, 0, (x2 - copy_x2) * 3);
+                memset(data + ((y - y1) * res->width() + copy_x2 - x1) * 3, 0, (x2 - copy_x2) * 3);
             }
             for (int y = copy_y1; y < copy_y2; ++y)
             {
