@@ -928,8 +928,8 @@ namespace maix::sys
 
         if(!ai_isp_enabled)
         {
-            usage["npu"] = vnpu_1_util;
-            usage["npu0"] = vnpu_1_util;
+            usage["npu"] = vnpu_2_util > vnpu_1_util ? vnpu_2_util : vnpu_1_util ;
+            usage["npu0"] = usage["npu"];
         }
         else
         {

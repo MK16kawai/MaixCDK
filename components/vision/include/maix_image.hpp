@@ -289,12 +289,12 @@ namespace maix::image
                     ((uint8_t *)_data)[y * _width * 3 + x * 3 + 0] = (v0 >> 16) & 0xFF;
                     ((uint8_t *)_data)[y * _width * 3 + x * 3 + 1] = (v0 >> 8) & 0xFF;
                     ((uint8_t *)_data)[y * _width * 3 + x * 3 + 2] = v0 & 0xFF;
-                } else if (pixel.size() == 3) {
+                } else if (pixel.size() == 3 || pixel.size() == 4) {
                     ((uint8_t *)_data)[y * _width * 3 + x * 3 + 0] = pixel[0];
                     ((uint8_t *)_data)[y * _width * 3 + x * 3 + 1] = pixel[1];
                     ((uint8_t *)_data)[y * _width * 3 + x * 3 + 2] = pixel[2];
                 } else {
-                    log::error("set_pixel pixel size must be 1 or 3, but %d\r\n", pixel.size());
+                    log::error("set_pixel pixel size must be 1, 3, 4, but %d\r\n", pixel.size());
                     return err::Err::ERR_RUNTIME;
                 }
                 break;
@@ -324,13 +324,18 @@ namespace maix::image
             case image::Format::FMT_BGRA8888:
                 if (pixel.size() == 1) {
                     ((uint32_t *)_data)[y * _width + x] = (uint32_t)pixel[0];
+                } else if (pixel.size() == 3) {
+                    ((uint8_t *)_data)[(y * _width << 2) + (x << 2) + 0] = pixel[0];
+                    ((uint8_t *)_data)[(y * _width << 2) + (x << 2) + 1] = pixel[1];
+                    ((uint8_t *)_data)[(y * _width << 2) + (x << 2) + 2] = pixel[2];
+                    ((uint8_t *)_data)[(y * _width << 2) + (x << 2) + 3] = 255;
                 } else if (pixel.size() == 4) {
                     ((uint8_t *)_data)[(y * _width << 2) + (x << 2) + 0] = pixel[0];
                     ((uint8_t *)_data)[(y * _width << 2) + (x << 2) + 1] = pixel[1];
                     ((uint8_t *)_data)[(y * _width << 2) + (x << 2) + 2] = pixel[2];
-                    ((uint8_t *)_data)[(y * _width << 2) + (x << 2) + 3] = pixel[3];
+                    ((uint8_t *)_data)[(y * _width << 2) + (x << 2) + 3] = (uint8_t)(pixel[3]*255);
                 } else {
-                    log::error("set_pixel pixel size must be 1 or 4, but %d\r\n", pixel.size());
+                    log::error("set_pixel pixel size must be 1, 3, 4, but %d\r\n", pixel.size());
                     return err::Err::ERR_RUNTIME;
                 }
                 break;
@@ -367,7 +372,7 @@ namespace maix::image
          * @return float32 tensor.Tensor object with new alloc memory, so you need to delete it manually in C++.
          * @maixpy maix.image.Image.to_tensor_float32
          */
-         tensor::Tensor * to_tensor_float32(bool chw = false, std::vector<float> mean = {}, std::vector<float> scale = {});
+         tensor::Tensor * to_tensor_float32(bool chw = false, std::vector<float> mean = std::vector<float>(), std::vector<float> scale = std::vector<float>());
 
         /**
          * Convert image to float32 tensor, and support normlize with mean and scale(1/std).
@@ -380,7 +385,7 @@ namespace maix::image
          * @param scale scale value, list type, can be on or three elements according to image's format.  Default empty means not normalize.
          * @maixcdk maix.image.Image.to_tensor_float32
          */
-         void to_tensor_float32(tensor::Tensor **tensor_result, bool chw = false, std::vector<float> mean = {}, std::vector<float> scale = {});
+         void to_tensor_float32(tensor::Tensor **tensor_result, bool chw = false, std::vector<float> mean = std::vector<float>(), std::vector<float> scale = std::vector<float>());
 
         /**
          * Get image's data and convert to array bytes

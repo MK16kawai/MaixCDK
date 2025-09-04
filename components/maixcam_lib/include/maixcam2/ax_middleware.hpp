@@ -1212,7 +1212,7 @@ namespace maix::middleware::maixcam2 {
             }
             mod_param.unlock(AX_MOD_SYS);
 
-            // log::info("sys init success, count:%d", sys_param->init_count);
+            log::info("maix multi-media driver used count: %d", sys_param->init_count);
             __is_inited = true;
             return err::ERR_NONE;
         }
@@ -1238,8 +1238,9 @@ namespace maix::middleware::maixcam2 {
                 if (axRet != AX_SUCCESS) {
                     log::error("AX_SYS_Deinit failed, ret:%#x", axRet);
                 }
-                printf("maix multi-media driver released.\r\n");
+                // printf("maix multi-media driver released.\r\n");
             }
+            log::info("maix multi-media driver used count: %d%s", sys_param->init_count,  sys_param->init_count == 0 ? ", driver released." : "");
             mod_param.unlock(AX_MOD_SYS);
             __is_inited = false;
         }

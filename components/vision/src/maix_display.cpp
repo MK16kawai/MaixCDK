@@ -200,7 +200,7 @@ namespace maix::display
             }
         }
 
-#if defined(PLATFORM_MAIXCAM) || defined(PLATFORM_MAIXCAM2)
+#if defined(PLATFORM_MAIXCAM)
         maix::image::Format show_img_format = img.format();
         if (show_img_format != maix::image::Format::FMT_RGB888
         && show_img_format != maix::image::Format::FMT_YVU420SP
@@ -217,6 +217,38 @@ namespace maix::display
             delete show_img;
         } else {
             _impl->show(img, fit);
+        }
+        return e;
+#elif defined(PLATFORM_MAIXCAM2) // TODO: support hardware resize
+        image::Image *show_img = &img;
+        bool need_delete = false;
+        maix::image::Format show_img_format = img.format();
+        if (show_img_format != maix::image::Format::FMT_RGB888
+        && show_img_format != maix::image::Format::FMT_YVU420SP
+        && show_img_format != maix::image::Format::FMT_YUV420SP
+        && show_img_format != maix::image::Format::FMT_BGRA8888
+        && show_img_format != maix::image::Format::FMT_GRAYSCALE) {
+            show_img = img.to_format(maix::image::Format::FMT_RGB888);
+            if (show_img == NULL) {
+                log::error("image format convert failed\n");
+                return err::ERR_RUNTIME;
+            }
+            need_delete = true;
+        }
+        if (fit != image::FIT_NONE && img.width() != _impl->width() || img.height() != _impl->height())
+        {
+            auto tmp_img = show_img->resize(_impl->width(), _impl->height(), fit);
+            if(need_delete)
+            {
+                delete show_img;
+            }
+            show_img = tmp_img;
+            need_delete = true;
+        }
+        _impl->show(*show_img, fit);
+        if(need_delete)
+        {
+            delete show_img;
         }
         return e;
 #else
