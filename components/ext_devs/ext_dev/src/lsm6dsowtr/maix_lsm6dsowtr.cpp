@@ -58,17 +58,17 @@ static float __invert_gyro_scale_to_float(imu::GyroScale scale) {
 }
 
 static float __invert_gyro_sampling_rate_to_float(imu::GyroOdr odr) {
-    if (odr >= imu::GyroOdr::GYRO_ODR_833) {
+    if (odr <= imu::GyroOdr::GYRO_ODR_833) {
         return 833;
-    } else if (odr >= imu::GyroOdr::GYRO_ODR_416) {
+    } else if (odr <= imu::GyroOdr::GYRO_ODR_416) {
         return 416;
-    } else if (odr >= imu::GyroOdr::GYRO_ODR_208) {
+    } else if (odr <= imu::GyroOdr::GYRO_ODR_208) {
         return 208;
-    } else if (odr >= imu::GyroOdr::GYRO_ODR_104) {
+    } else if (odr <= imu::GyroOdr::GYRO_ODR_104) {
         return 104;
-    } else if (odr >= imu::GyroOdr::GYRO_ODR_52) {
+    } else if (odr <= imu::GyroOdr::GYRO_ODR_52) {
         return 52;
-    } else if (odr >= imu::GyroOdr::GYRO_ODR_26) {
+    } else if (odr <= imu::GyroOdr::GYRO_ODR_26) {
         return 26;
     } else {
         return 12.5;
@@ -88,17 +88,17 @@ static float __invert_accel_scale_to_float(imu::AccScale scale) {
 }
 
 static float __invert_accel_sampling_rate_to_float(imu::AccOdr odr) {
-    if (odr >= imu::AccOdr::ACC_ODR_833) {
+    if (odr <= imu::AccOdr::ACC_ODR_833) {
         return 833;
-    } else if (odr >= imu::AccOdr::ACC_ODR_416) {
+    } else if (odr <= imu::AccOdr::ACC_ODR_416) {
         return 416;
-    } else if (odr >= imu::AccOdr::ACC_ODR_208) {
+    } else if (odr <= imu::AccOdr::ACC_ODR_208) {
         return 208;
-    } else if (odr >= imu::AccOdr::ACC_ODR_104) {
+    } else if (odr <= imu::AccOdr::ACC_ODR_104) {
         return 104;
-    } else if (odr >= imu::AccOdr::ACC_ODR_52) {
+    } else if (odr <= imu::AccOdr::ACC_ODR_52) {
         return 52;
-    } else if (odr >= imu::AccOdr::ACC_ODR_26) {
+    } else if (odr <= imu::AccOdr::ACC_ODR_26) {
         return 26;
     } else {
         return 12.5;
