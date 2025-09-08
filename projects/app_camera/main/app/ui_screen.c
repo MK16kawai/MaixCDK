@@ -504,6 +504,7 @@ static void right_screen_init(void)
         lv_obj_t *obj = lv_obj_create(scr);
         lv_obj_set_size(obj, 64, 64);
         lv_obj_add_flag(obj, LV_OBJ_FLAG_CHECKABLE);
+        lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_add_event_cb(obj, event_touch_video_camera_cb, LV_EVENT_CLICKED, NULL);
         lv_obj_add_style(obj, &click_style, LV_STATE_CHECKED);
         lv_obj_add_style(obj, &release_style, LV_STATE_DEFAULT);
@@ -539,6 +540,7 @@ static void right_screen_init(void)
         lv_obj_t *obj = lv_obj_create(scr);
         lv_obj_set_size(obj, 64, 64);
         lv_obj_add_flag(obj, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_add_event_cb(obj, event_touch_start_cb, LV_EVENT_CLICKED, NULL);
         lv_obj_add_style(obj, &release_style, LV_STATE_DEFAULT);
         lv_obj_add_style(obj, &click_style, LV_STATE_PRESSED);

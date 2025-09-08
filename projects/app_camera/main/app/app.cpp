@@ -90,6 +90,9 @@ static struct {
     bool audio_en;
 
     ui_camera_config_t ui_camera_cfg;
+#ifdef PLATFORM_MAIXCAM2
+    bool ai_isp_on;
+#endif
 } priv;
 
 static ui_camera_resolution_config_t default_resolution_configs[UI_CAMERA_RESOLUTION_MAX_NUM] = {
@@ -295,6 +298,12 @@ static int _get_encode_bitrate_by_camera_resolution(int w, int h) {
 
 int app_base_init(void)
 {
+#ifdef PLATFORM_MAIXCAM2
+    priv.ai_isp_on = app::get_sys_config_kv("npu", "ai_isp", "1") == "1" ? true : false;
+    if (!priv.ai_isp_on) {
+        app::set_sys_config_kv("npu", "ai_isp", "1");
+    }
+#endif
     // FIXME: camera can't switch to other sensor config online.
     // mmf_deinit_v2(true);
 
@@ -431,6 +440,13 @@ int app_base_deinit(void)
     }
 
     app_deinit();
+#ifdef PLATFORM_MAIXCAM2
+    if (priv.ai_isp_on) {
+        app::set_sys_config_kv("npu", "ai_isp", "1");
+    } else {
+        app::set_sys_config_kv("npu", "ai_isp", "0");
+    }
+#endif
     return 0;
 }
 
