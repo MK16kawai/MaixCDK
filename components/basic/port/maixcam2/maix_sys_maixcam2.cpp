@@ -20,4 +20,13 @@ namespace maix::sys
     void register_default_signal_handle() {
         signal(SIGINT, signal_handle);
     }
+
+    bool is_support(sys::Feature feature)
+    {
+        switch(feature)
+        {
+            default:
+                return true;
+        }
+    }
 }

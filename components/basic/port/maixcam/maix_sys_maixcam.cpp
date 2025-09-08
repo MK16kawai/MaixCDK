@@ -20,4 +20,15 @@ namespace maix::sys
     void register_default_signal_handle() {
         signal(SIGINT, signal_handle);
     }
+
+    bool is_support(sys::Feature feature)
+    {
+        switch(feature)
+        {
+            case Feature::AI_ISP:
+                return false;
+            default:
+                return true;
+        }
+    }
 }

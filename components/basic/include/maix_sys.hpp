@@ -195,5 +195,22 @@ namespace maix::sys
     */
     void reboot();
 
+    /**
+     * Special features enumerate for sys.is_support to query platform support feature or not.
+     * @maixpy maix.sys.Feature
+     */
+    enum class Feature
+    {
+        AI_ISP = 0,
+        MAX
+    };
+
+    /**
+     * Query is board support special feature or not.
+     * @param feature which feature you want to query, see sys.Feature enumerate.
+     * @maixpy maix.sys.is_support
+     */
+     bool is_support(sys::Feature feature);
+
 } // namespace maix::sys
 
