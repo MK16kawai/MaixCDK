@@ -582,6 +582,8 @@ namespace maix::nn
         param->dual_buff = false;
         _speed = speed;
         param->language = language;
+        std::transform(param->language.begin(), param->language.end(), param->language.begin(),
+                [](unsigned char c){ return std::toupper(c); });
         param->noise_scale = noise_scale;
         param->noise_scale_w = noise_scale_w;
         param->sdp_ratio = sdp_ratio;
