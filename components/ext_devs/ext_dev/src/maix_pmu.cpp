@@ -101,7 +101,7 @@ bool PMU::is_charging()
         ret = param->driver.axp2101->is_charging();
     }
     else if (_driver == "maixcam2") {
-        ret = get_bat_percent() != 100;
+        return false;
     }
     return ret;
 }
