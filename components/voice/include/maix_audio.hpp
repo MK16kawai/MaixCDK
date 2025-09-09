@@ -634,7 +634,7 @@ namespace maix::audio
          * @note Generally, the buffer size needs to be modified during non-blocking operations.
          * @param period_count When period_count is less than 0, the current value of period_count will be returned;
          * when period_count is greater than 0, period_count will be updated, and the size of period_count after setting will be returned.
-         * @return the current period size
+         * @return the current period count
          * @maixpy maix.audio.Player.period_count
         */
         int period_count(int period_count = -1);

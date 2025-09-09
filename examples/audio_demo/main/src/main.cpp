@@ -217,8 +217,8 @@ int _main(int argc, char* argv[])
                 break;
             }
         }
-        if (argc > 7) {
-            block = atoi(argv[7]) ? true : false;
+        if (argc > 6) {
+            block = atoi(argv[6]) ? true : false;
         }
 
         log::info("Playback %s\r\n", path.c_str());
@@ -227,7 +227,7 @@ int _main(int argc, char* argv[])
         err::check_bool_raise(p.format() == format);
         err::check_bool_raise(p.channel() == channel);
         if (!block) {
-            log::info("Set period count:%d", p.period_count(20));
+            log::info("Set period count:%d", p.period_count(30));
         }
 
         FILE *file;
@@ -244,12 +244,15 @@ int _main(int argc, char* argv[])
                 log::info("Play bytes:%d, used %lld ms", data.size(), time::ticks_ms() - t);
             } else {
                 auto bytes_per_frames = p.frame_size();
+                auto t2 = time::ticks_ms();
                 while ((size_t)(p.get_remaining_frames() * bytes_per_frames) < data.size() && !app::need_exit()) {
                     time::sleep_ms(1);
                 }
+                log::info("wait cost:%lld ms", time::ticks_ms() - t2);
 
+                auto t3 = time::ticks_ms();
                 err::check_raise(p.play(&data), "play failed!\r\n");
-                log::info("Play bytes:%d, used %lld ms", data.size(), time::ticks_ms() - t);
+                log::info("Play bytes:%d, used %lld ms, remaining size: %d", data.size(), time::ticks_ms() - t3, p.get_remaining_frames());
             }
         }
         fclose(file);

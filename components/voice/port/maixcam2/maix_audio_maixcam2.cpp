@@ -11,7 +11,11 @@
 #include "maix_audio.hpp"
 #include <sys/wait.h>
 #include "ax_middleware.hpp"
+#include <condition_variable>
 #include <list>
+#include <queue>
+#include <mutex>
+#include <thread>
 
 using namespace maix;
 using namespace maix::middleware;
@@ -92,6 +96,121 @@ namespace maix::audio
         return 0;
     }
 
+    static int pcm_frame_to_bytes(int channels, int bits, int count) {
+        return count * channels * bits / 8;
+    }
+    class RingBuffer {
+    public:
+        explicit RingBuffer(size_t capacity)
+            : buffer(capacity), capacity(capacity), head(0), tail(0), size(0), exitFlag(false) {}
+
+        // 写入数据
+        void write(const uint8_t* data, size_t len) {
+            size_t written = 0;
+            while (written < len) {
+                std::unique_lock<std::mutex> lock(mtx);
+                not_full.wait(lock, [this] { return size < capacity || exitFlag;});
+                if (exitFlag) break;
+                size_t space = capacity - size;
+                size_t chunk = std::min(len - written, space);
+                for (size_t i = 0; i < chunk; i++) {
+                    buffer[tail] = data[written + i];
+                    tail = (tail + 1) % capacity;
+                }
+                size += chunk;
+                written += chunk;
+
+                lock.unlock();
+                not_empty.notify_one();
+            }
+        }
+
+        // 读取数据
+        size_t read(uint8_t* out, size_t len) {
+            size_t readCount = 0;
+            while (readCount < len) {
+                std::unique_lock<std::mutex> lock(mtx);
+                // 阻塞直到有数据或退出
+                not_empty.wait(lock, [this] { return size > 0 || exitFlag;});
+
+                if (exitFlag && size == 0) break;
+
+                size_t available = size;
+                size_t chunk = std::min(len - readCount, available);
+
+                for (size_t i = 0; i < chunk; i++) {
+                    out[readCount + i] = buffer[head];
+                    head = (head + 1) % capacity;
+                }
+                size -= chunk;
+                readCount += chunk;
+
+                lock.unlock();
+                not_full.notify_one();
+            }
+            return readCount;
+        }
+
+        // 清空缓冲区
+        void clear() {
+            std::lock_guard<std::mutex> lock(mtx);
+            head = tail = size = 0;
+            // 通知所有阻塞线程缓冲区已清空
+            not_full.notify_all();
+            not_empty.notify_all();
+        }
+
+        // 通知退出
+        void setExit() {
+            std::lock_guard<std::mutex> lock(mtx);
+            exitFlag = true;
+            not_empty.notify_all();
+            not_full.notify_all();
+        }
+
+        bool isExit() {
+            std::lock_guard<std::mutex> lock(mtx);
+            return exitFlag;
+        }
+
+        bool empty() {
+            std::lock_guard<std::mutex> lock(mtx);
+            return size == 0;
+        }
+
+        void reset(size_t newCapacity = 0) {
+            std::lock_guard<std::mutex> lock(mtx);
+            head = tail = size = 0;
+            exitFlag = false;
+
+            if (newCapacity > 0 && newCapacity != capacity) {
+                buffer.resize(newCapacity);
+                capacity = newCapacity;
+            }
+
+            not_empty.notify_all();
+            not_full.notify_all();
+        }
+
+        size_t available() {
+            std::lock_guard<std::mutex> lock(mtx);
+            return size;
+        }
+
+        size_t idle_size() {
+            std::lock_guard<std::mutex> lock(mtx);
+            return capacity - size;
+        }
+    private:
+        std::vector<uint8_t> buffer;
+        size_t capacity;
+        size_t head, tail, size;
+        bool exitFlag;
+
+        std::mutex mtx;
+        std::condition_variable not_empty, not_full;
+    };
+
     typedef struct {
         uint32_t card;
         uint32_t device;
@@ -114,6 +233,14 @@ namespace maix::audio
         std::unique_ptr<audio::File> wav_reader;
         AX_AUDIO_BIT_WIDTH_E ax_bit_width;
         AX_AUDIO_SOUND_MODE_E ax_sound_mode;
+
+        bool thread_exit_flag;
+        std::unique_ptr<std::thread> thread_handle;
+        std::unique_ptr<RingBuffer> ring_buffer;
+        size_t thread_chunk_size;
+
+        int user_period_size;
+        int user_period_count;
     } audio_param_t;
 
     static AX_AUDIO_BIT_WIDTH_E __maix_to_ax_fmt(audio::Format format) {
@@ -567,6 +694,27 @@ namespace maix::audio
     maix::Bytes *Player::NoneBytes = NULL;
 #endif
 
+    static void player_thread(audio_param_t *param) {
+        auto period_size = param->user_period_size;
+        auto chunk_size = period_size * param->channels * param->bits / 8;
+        std::vector<uint8_t> buffer(chunk_size);
+        while (!app::need_exit() && !param->thread_exit_flag) {
+            auto size = param->ring_buffer->read(buffer.data(), buffer.size());
+            if (size != buffer.size()) {
+                time::sleep_ms(10);
+                continue;
+            }
+
+            maixcam2::Frame frame = maixcam2::Frame(param->card, param->device,
+                buffer.data(), buffer.size(), param->ax_bit_width, param->ax_sound_mode);
+            auto ret = param->ax_ao->write(&frame);
+            if (ret != err::ERR_NONE) {
+                log::warn("ao write failed");
+            }
+        }
+        param->ring_buffer->setExit();
+    }
+
     Player::Player(std::string path, int sample_rate, audio::Format format, int channel, bool block) {
         if (path.size() > 0) {
             if (fs::splitext(path)[1] != ".wav"
@@ -578,7 +726,7 @@ namespace maix::audio
         err::Err ret = err::ERR_NONE;
         audio_param_t *param = new audio_param_t();
         err::check_null_raise(param, "malloc failed");
-        AX_AUDIO_BIT_WIDTH_E ax_bit_width = AX_AUDIO_BIT_WIDTH_16;
+        AX_AUDIO_BIT_WIDTH_E ax_bit_width = __maix_to_ax_fmt(format);
         if (path.size() > 0) {
             param->wav_reader = std::make_unique<audio::File>(sample_rate, channel, fmt_bits[format]);
             param->wav_reader->load(path);
@@ -597,13 +745,17 @@ namespace maix::audio
         param->rate = sample_rate;
         param->ax_bit_width = ax_bit_width;
         param->block = block;
+        param->bits = (ax_bit_width + 1) * 8;
         param->ax_sound_mode = param->channels == 1 ? AX_AUDIO_SOUND_MODE_MONO : AX_AUDIO_SOUND_MODE_STEREO;
+        param->user_period_size = 160;
+        param->user_period_count = 30;
         maixcam2::ax_audio_out_param_t audio_out_param = {
             .channels = param->ax_channels,
             .rate = sample_rate,
             .bits = ax_bit_width,
             .period_size = 160,
-            .period_count = 8,
+            .period_count = 30,
+            .insert_silence = true,
         };
 
         param->ax_sys = new maixcam2::SYS();
@@ -639,6 +791,14 @@ namespace maix::audio
             delete param;
             err::check_raise(ret, "initializing AudioOut failed");
         }
+
+        param->thread_exit_flag = false;
+
+        auto period_size = param->ax_ao->period_size();
+        auto period_count = param->ax_ao->period_count();
+        auto ringbuffer_size = pcm_frame_to_bytes(param->channels, param->bits, period_size)* period_count;
+        param->ring_buffer = std::make_unique<RingBuffer>(ringbuffer_size);
+        param->thread_handle = std::make_unique<std::thread>(player_thread, param);
         _param = param;
 
         int new_volume = atoi(app::get_sys_config_kv("audio", "output_volume", "-1").c_str());
@@ -650,6 +810,15 @@ namespace maix::audio
     Player::~Player() {
         audio_param_t *param = (audio_param_t *)_param;
         if (param) {
+
+            if (param->thread_handle) {
+                param->thread_exit_flag = true;
+                param->ring_buffer->setExit();
+                param->thread_handle->join();
+                param->thread_handle = nullptr;
+                param->ring_buffer = nullptr;
+            }
+
             if (param->ax_ao) {
                 delete param->ax_ao;
                 param->ax_ao = nullptr;
@@ -682,67 +851,75 @@ namespace maix::audio
     err::Err Player::play(maix::Bytes *data) {
         audio_param_t *param = (audio_param_t *)_param;
         err::Err ret = err::ERR_NONE;
+        if (!param->ring_buffer || param->ring_buffer->isExit()) {
+            return err::ERR_NOT_READY;
+        }
 
         if (!data || !data->data || !data->size()) {
             if (param->path.size() > 0 && fs::exists(param->path)) {
                 auto pcm = param->wav_reader->get_pcm();
-                maixcam2::Frame frame = maixcam2::Frame(param->card, param->device,
-                    pcm->data, pcm->data_len, param->ax_bit_width, param->ax_sound_mode);
-                ret = param->ax_ao->write(&frame);
-                if (ret != err::ERR_NONE) {
-                    err::check_raise(ret, "audio out write failed");
-                }
+                param->ring_buffer->write(pcm->data, pcm->data_len);
                 delete pcm;
             }
         } else {
-            maixcam2::Frame frame = maixcam2::Frame(param->card, param->device,
-                data->data, data->data_len, param->ax_bit_width, param->ax_sound_mode);
-            ret = param->ax_ao->write(&frame);
-            if (ret != err::ERR_NONE) {
-                err::check_raise(ret, "audio out write failed");
+            param->ring_buffer->write(data->data, data->data_len);
+        }
+
+        if (param->block) {
+            while (!app::need_exit()) {
+                if (param->ring_buffer->empty()) {
+                    break;
+                }
+                time::sleep_ms(10);
             }
         }
 
         return ret;
     }
 
-    static int pcm_frame_to_bytes(int channels, int bits, int count) {
-        return count * channels * bits / 8;
-    }
-
     int Player::frame_size(int frame_count) {
         audio_param_t *param = (audio_param_t *)_param;
-        return pcm_frame_to_bytes(param->channels, (int)__maix_to_ax_fmt(param->format) + 1, frame_count);
+        return pcm_frame_to_bytes(param->channels, param->bits, frame_count);
     }
 
     int Player::get_remaining_frames() {
         audio_param_t *param = (audio_param_t *)_param;
-        int total_num = 0, free_num = 0, busy_num = 0, pcm_delay = 0;
-        err::Err ret = param->ax_ao->state(total_num, free_num, busy_num, pcm_delay);
-        int avail = 0;
-        if (ret == err::ERR_NONE) {
-            avail = free_num;
-        } else {
-            log::error("get_remaining_frames failed, ret:%d", ret);
-        }
-        log::warn("This function is not supported yet");
+        auto avail = param->ring_buffer->idle_size() / frame_size();
         return avail;
     }
 
     int Player::period_size(int period_size) {
         audio_param_t *param = (audio_param_t *)_param;
-        return param->ax_ao->period_size(period_size);
+        if (period_size >= 0 && period_size != param->user_period_size) {
+            param->user_period_size = period_size;
+            reset();
+        }
+
+        return param->user_period_size;
     }
 
     int Player::period_count(int period_count) {
         audio_param_t *param = (audio_param_t *)_param;
-        return param->ax_ao->period_count(period_count);
+        if (period_count >= 0 && period_count != param->user_period_count) {
+            param->user_period_count = period_count;
+            reset();
+        }
+
+        return param->user_period_count;
     }
 
     void Player::reset(bool start) {
         (void)start;
         audio_param_t *param = (audio_param_t *)_param;
         param->ax_ao->clear();
+
+        param->thread_exit_flag = true;
+        param->ring_buffer->setExit();
+        param->thread_handle->join();
+        auto ringbuffer_size = frame_size(param->user_period_size) * param->user_period_count;
+        param->ring_buffer->reset(ringbuffer_size);
+        param->thread_exit_flag = false;
+        param->thread_handle = std::make_unique<std::thread>(player_thread, param);
     }
 
     int Player::sample_rate() {
