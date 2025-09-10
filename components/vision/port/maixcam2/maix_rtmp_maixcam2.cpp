@@ -149,8 +149,8 @@ public:
                 goto _free_audio_codec_ctx;
             }
 #if CONFIG_FFMPEG_VERSION_MAJOR == 6 && CONFIG_FFMPEG_VERSION_MINOR == 1 && CONFIG_FFMPEG_VERSION_PATCH == 1
-            av_opt_set_chlayout(swr_ctx, "in_channel_layout", &audio_codec_ctx->ch_layout, 0);
-            av_opt_set_chlayout(swr_ctx, "out_channel_layout", &audio_codec_ctx->ch_layout, 0);
+            av_opt_set_chlayout(swr_ctx, "in_chlayout", &audio_codec_ctx->ch_layout, 0);
+            av_opt_set_chlayout(swr_ctx, "out_chlayout", &audio_codec_ctx->ch_layout, 0);
 #else
             av_opt_set_int(swr_ctx, "in_channel_layout", audio_codec_ctx->channel_layout, 0);
             av_opt_set_int(swr_ctx, "out_channel_layout", audio_codec_ctx->channel_layout, 0);
@@ -159,13 +159,14 @@ public:
             av_opt_set_int(swr_ctx, "out_sample_rate", audio_codec_ctx->sample_rate, 0);
             av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", format, 0);
             av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_FLTP, 0);
-            swr_init(swr_ctx);
+            if (0 != swr_init(swr_ctx)) {
+                log::error("Can't init swr context");
+                goto _free_audio_codec_ctx;
+            }
 
             AVFrame *audio_frame = av_frame_alloc();
             if (!audio_frame) {
 				log::info("Can't alloc audio frame");
-                swr_free(&swr_ctx);
-                swr_ctx = NULL;
                 goto _free_swr_ctx;
             }
             audio_frame->nb_samples = audio_codec_ctx->frame_size;
@@ -482,7 +483,7 @@ _free_format_context:
                         Bytes *pcm = item.second;
                         if (pcm) {
                             if (pcm->data_len == buffer_size) {
-                                const uint8_t *in[] = {pcm->data};
+                                const uint8_t *in[AV_NUM_DATA_POINTERS] = {pcm->data};
                                 uint8_t *out[AV_NUM_DATA_POINTERS] = {0};
                                 memcpy(out, audio_frame->data, AV_NUM_DATA_POINTERS);
                                 swr_convert(swr_ctx, out, audio_codec_ctx->frame_size, in, audio_codec_ctx->frame_size);
@@ -837,7 +838,6 @@ namespace maix::rtmp {
             }
 
             if (has_audio && rtmp_client->is_opened()) {
-                int frame_size_per_second = rtmp_client->get_frame_size_per_second();
                 uint64_t loop_ms = 0;
                 if (last_read_pcm_ms == 0) {
                     loop_ms = 30;
