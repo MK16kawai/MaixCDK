@@ -4,7 +4,7 @@ MaixCDK Examples
 Examples in this directory are cross-platform, which means they can run on any platform supported by MaixCDK.
 e.g. Camera demo.
 
-All examples name should be start with noun like `image_show` but not `show_image`.
+All examples name should be start with noun like `display_image_show` but not `display_show_image`.
 
 
 Specific platform examples should be placed in `MaixCDK/test` directory.

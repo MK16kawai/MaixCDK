@@ -18,8 +18,8 @@ int _main(int argc, char* argv[])
     uint64_t t1, t2, t3;
     char buf[128] = {0};
 
-    display::Display screen = display::Display();
-    log::info("screen size: %dx%d\n", screen.width(), screen.height());
+    display::Display disp = display::Display();
+    log::info("screen size: %dx%d\n", disp.width(), disp.height());
 
     // time when start read image from camera
     t1 = time::ticks_ms();
@@ -31,7 +31,7 @@ int _main(int argc, char* argv[])
     // time when read image finished
     t2 = time::ticks_ms();
 
-    screen.show(*img);
+    disp.show(*img);
 
     // free image data, important!
     delete img;
@@ -41,10 +41,10 @@ int _main(int argc, char* argv[])
     snprintf(buf, sizeof(buf), "load: %ld, disp: %ld, all: %ld (ms)", t2-t1, t3-t2, t3-t1);
     while(!app::need_exit())
     {
-        // check if screen is closed by user(mostly for PC), and show image on screen
-        if(!screen.is_opened())
+        // check if disp is closed by user(mostly for PC), and show image on screen
+        if(!disp.is_opened())
         {
-            log::info("screen closed\n");
+            log::info("disp closed\n");
             break;
         }
         time::sleep_ms(50);

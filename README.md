@@ -24,7 +24,7 @@ MaixCDK
 [![Build MaixCAM](https://github.com/sipeed/MaixCDK/actions/workflows/build_maixcam.yml/badge.svg)](https://github.com/sipeed/MaixCDK/actions/workflows/build_maixcam.yml)
 [![Trigger wiki](https://github.com/sipeed/MaMaixCDKixPy/actions/workflows/trigger_wiki.yml/badge.svg)](https://github.com/sipeed/MaixCDK/actions/workflows/trigger_wiki.yml)
 
-[English](./README.md) | 中文
+English | [中文](./README_ZH.md)
 
 </div>
 

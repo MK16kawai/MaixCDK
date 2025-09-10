@@ -86,7 +86,7 @@ int _main(int argc, char *argv[])
     bool only_first_class = true;
 
 
-    nn::YOLOv8 detector("", dual_buff);
+    nn::YOLO11 detector("", dual_buff);
     e = detector.load(model_path);
     err::check_raise(e, "load model failed");
     log::info("load yolov8 model %s success", model_path);
