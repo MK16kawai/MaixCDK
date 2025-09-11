@@ -418,17 +418,18 @@ namespace maix::nn
     */
     std::string Whisper::transcribe(std::string &file) {
         if (fs::exists(file) == false) {
+            log::error("file not exists: %s", file.c_str());
             return "";
         }
 
         auto f = fopen(file.c_str(), "rb+");
         if (f == NULL) {
-            log::error("open file error");
+            log::error("open file error:%s", file.c_str());
             return "";
         }
 
-        if (fs::splitext(file)[1] != ".wav") {
-            log::error("file is not wav");
+        if (fs::splitext(file)[1] != ".wav" && fs::splitext(file)[1] != ".pcm") {
+            log::error("file is not pcm or wav: %s", file.c_str());
             fclose(f);
             return "";
         }

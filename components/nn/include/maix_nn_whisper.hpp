@@ -55,7 +55,7 @@ namespace maix::nn
         /**
          * Transcribe audio file to text
          * @note If the wav file has multiple channels, only the first channel will be used.
-         * @param file Pass in an audio file, supporting files in WAV format.
+         * @param file Pass in an audio file, supporting files in wav,pcm format.
          * @return The output result after automatic speech recognition.
          * @maixpy maix.nn.Whisper.transcribe
         */
