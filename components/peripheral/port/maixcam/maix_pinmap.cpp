@@ -39,7 +39,8 @@ namespace maix::peripheral::pinmap
             "GPIOA18",
             "PWM6",
             "UART1_RX",
-            "JTAG_TCK"
+            "JTAG_TCK",
+            "UART1_CTS"
         }},
         {"A19",{
             "GPIOA19",
@@ -424,6 +425,9 @@ namespace maix::peripheral::pinmap
             }  else if (func == "JTAG_TCK") {
                 set_pinmux(0x03001068, 0);
                 set_pinmux(0x03001934, 0x44);
+            }  else if (func == "UART1_CTS") {
+                set_pinmux(0x03001068, 4);
+                set_pinmux(0x03001934, 0x44);
             } else {
                 return err::ERR_NOT_IMPL;
             }
@@ -441,6 +445,9 @@ namespace maix::peripheral::pinmap
                 set_pinmux(0x03001930, 0x84);
             } else if (func == "JTAG_TMS") {
                 set_pinmux(0x03001064, 0);
+                set_pinmux(0x03001930, 0x44);
+            }  else if (func == "UART1_RTS") {
+                set_pinmux(0x03001064, 4);
                 set_pinmux(0x03001930, 0x44);
             } else {
                 return err::ERR_NOT_IMPL;
