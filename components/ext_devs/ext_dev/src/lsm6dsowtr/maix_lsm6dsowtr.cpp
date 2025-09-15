@@ -146,7 +146,7 @@ static std::vector<float> __read_gyro_data(std::string path) {
     auto gyro_x = (float)std::atof(__load_file_to_string(path + "/in_anglvel_x_raw").c_str());
     auto gyro_y = (float)std::atof(__load_file_to_string(path + "/in_anglvel_y_raw").c_str());
     auto gyro_z = (float)std::atof(__load_file_to_string(path + "/in_anglvel_z_raw").c_str());
-    return {gyro_x * gyro_scale, gyro_y * gyro_scale, gyro_z * gyro_scale};
+    return {gyro_x * gyro_scale * 180 / (float)M_PI, gyro_y * gyro_scale * 180 / (float)M_PI, gyro_z * gyro_scale * 180 / (float)M_PI};
 }
 
 static std::vector<float> __read_accel_data(std::string path) {
@@ -154,7 +154,7 @@ static std::vector<float> __read_accel_data(std::string path) {
     auto accel_x = (float)std::atof(__load_file_to_string(path + "/in_accel_x_raw").c_str());
     auto accel_y = (float)std::atof(__load_file_to_string(path + "/in_accel_y_raw").c_str());
     auto accel_z = (float)std::atof(__load_file_to_string(path + "/in_accel_z_raw").c_str());
-    return {accel_x * accel_scale, accel_y * accel_scale, accel_z * accel_scale};
+    return {accel_x * accel_scale / 9.8f, accel_y * accel_scale / 9.8f, accel_z * accel_scale / 9.8f};
 }
 
 LSM6DSOWTR::LSM6DSOWTR(imu::Mode mode, imu::AccScale acc_scale,
