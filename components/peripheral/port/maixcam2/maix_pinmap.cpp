@@ -151,7 +151,7 @@
             PinInfo {
                 std::vector<std::string> {"GPIOB3", "PWM5", "UART3_RX", "SPI2_MISO"},
                 PinRegInfo               {0x02304090, 16, 3},
-                std::vector<int>         {6, 3, 3}
+                std::vector<int>         {6, 3, 0, 1}
             }
         },
         {"B18", // GPIO1_A18
