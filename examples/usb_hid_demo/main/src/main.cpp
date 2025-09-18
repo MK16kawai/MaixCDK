@@ -112,7 +112,7 @@ static int cmd_loop(hid::Hid &mouse, hid::Hid &keyboard, hid::Hid &touchpad)
             touchpad.write(buff);
             break;
         }
-        default:printf("Find not cmd!\r\n"); break;
+        default:printf("The command %d was not found!\r\n", cmd); break;
         }
 
         log::info("cmd use %ld ms\r\n", time::ticks_ms() - t1);

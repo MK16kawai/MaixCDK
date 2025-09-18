@@ -463,7 +463,7 @@ static int cmd_loop(camera::Camera *cam, display::Display *disp)
             log::info("Get white balance gain to [%f, %f, %f, %f]", new_gains[0], new_gains[1], new_gains[2], new_gains[3]);
             break;
         }
-        default:printf("Find not cmd!\r\n"); break;
+        default:printf("The command %d was not found!\r\n", cmd); break;
         }
 
         log::info("cmd use %ld ms\r\n", time::ticks_ms() - t1);
