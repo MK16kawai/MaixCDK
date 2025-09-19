@@ -863,7 +863,7 @@ namespace maix::middleware::maixcam2 {
         for (j = 0; j < (AX_S32)pCam->tDevBindPipe.nNum; j++) {
             pCam->tPipeInfo[j].ePipeMode = SAMPLE_PIPE_MODE_VIDEO;
             pCam->tPipeInfo[j].bAiispEnable = pVinParam->bAiispEnable;
-            strncpy(pCam->tPipeInfo[j].szBinPath, "null.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
+            strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/os04d10_sdr_color_0428_202509191031.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
         }
         return 0;
     }
