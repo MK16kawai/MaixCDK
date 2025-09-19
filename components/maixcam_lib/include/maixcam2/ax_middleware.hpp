@@ -1281,9 +1281,13 @@ namespace maix::middleware::maixcam2 {
         ~Frame();
         frame_from_e from();
         err::Err get_video_frame(AX_VIDEO_FRAME_T * frame);
+        err::Err set_video_frame(AX_VIDEO_FRAME_T * frame);
         err::Err get_audio_frame(AX_AUDIO_FRAME_T * frame);
+        err::Err set_audio_frame(AX_AUDIO_FRAME_T * frame);
         err::Err get_venc_stream(AX_VENC_STREAM_T * stream);
+        err::Err set_venc_stream(AX_VENC_STREAM_T * stream);
         err::Err get_video_frame_info(AX_VIDEO_FRAME_INFO_T * stream);
+        err::Err set_video_frame_info(AX_VIDEO_FRAME_INFO_T * stream);
     };
 
     class ENGINE {

@@ -48,8 +48,56 @@ namespace maix::display
         }
         return 0;
     }
+#if 0
+    static __attribute__((unused)) void __print_video_frame(AX_VIDEO_FRAME_T *frame) {
+        printf(" ===================== video frame ===================== \r\n");
+        printf("stVFrame.nWidth:%d\r\n", frame->u32Width);
+        printf("stVFrame.u32Height:%d\r\n", frame->u32Height);
+        printf("stVFrame.enImgFormat:%d\r\n", (int)frame->enImgFormat);
+        printf("stVFrame.enVscanFormat:%d\r\n", (int)frame->enVscanFormat);
+        printf("stVFrame.stCompressInfo.enCompressMode:%d\r\n", (int)frame->stCompressInfo.enCompressMode);
+        printf("stVFrame.stCompressInfo.u32CompressLevel:%d\r\n", (int)frame->stCompressInfo.u32CompressLevel);
+        printf("stVFrame.stDynamicRange:%d\r\n", (int)frame->stDynamicRange);
+        printf("stVFrame.stColorGamut:%d\r\n", (int)frame->stColorGamut);
+        for (int i = 0; i < AX_MAX_COLOR_COMPONENT; i++) {
+            printf("stVFrame.u32PicStride[%d]:%d\r\n", i, (int)frame->u32PicStride[i]);
+        }
+        for (int i = 0; i < AX_MAX_COLOR_COMPONENT; i++) {
+            printf("stVFrame.u32ExtStride[%d]:%d\r\n", i, (int)frame->u32ExtStride[i]);
+        }
+        for (int i = 0; i < AX_MAX_COLOR_COMPONENT; i++) {
+            printf("stVFrame.u64PhyAddr[%d]:%#x\r\n", i, (int)frame->u64PhyAddr[i]);
+        }
+        for (int i = 0; i < AX_MAX_COLOR_COMPONENT; i++) {
+            printf("stVFrame.u64VirAddr[%d]:%#x\r\n", i, (int)frame->u64VirAddr[i]);
+        }
+        for (int i = 0; i < AX_MAX_COLOR_COMPONENT; i++) {
+            printf("stVFrame.u64ExtPhyAddr[%d]:%#x\r\n", i, (int)frame->u64ExtPhyAddr[i]);
+        }
+        for (int i = 0; i < AX_MAX_COLOR_COMPONENT; i++) {
+            printf("stVFrame.u64ExtVirAddr[%d]:%#x\r\n", i, (int)frame->u64ExtVirAddr[i]);
+        }
+        for (int i = 0; i < AX_MAX_COLOR_COMPONENT; i++) {
+            printf("stVFrame.u32HeaderSize[%d]:%d\r\n", i, (int)frame->u32HeaderSize[i]);
+        }
+        for (int i = 0; i < AX_MAX_COLOR_COMPONENT; i++) {
+            printf("stVFrame.u32BlkId[%d]:%d\r\n", i, (int)frame->u32BlkId[i]);
+        }
+        printf("stVFrame.s16CropX:%d\r\n", frame->s16CropX);
+        printf("stVFrame.s16CropY:%d\r\n", frame->s16CropY);
+        printf("stVFrame.s16CropWidth:%d\r\n", frame->s16CropWidth);
+        printf("stVFrame.s16CropHeight:%d\r\n", frame->s16CropHeight);
 
+        printf("stVFrame.u32TimeRef:%d\r\n", frame->u32TimeRef);
+        printf("stVFrame.u64PTS:%lld\r\n", frame->u64PTS);
+        printf("stVFrame.u64SeqNum:%lld\r\n", frame->u64SeqNum);
+        printf("stVFrame.u64UserData:%lld\r\n", frame->u64UserData);
+        printf("stVFrame.u64PrivateData:%lld\r\n", frame->u64PrivateData);
 
+        printf("stVFrame.u32FrameFlag:%d\r\n", frame->u32FrameFlag);
+        printf("stVFrame.u32FrameSize:%d\r\n", frame->u32FrameSize);
+    }
+#endif
     static void _get_disp_configs(bool &flip, bool &mirror, float &max_backlight) {
         std::string flip_str;
         bool flip_is_found = false;
@@ -88,6 +136,96 @@ namespace maix::display
     {
         std::unique_ptr<maixcam2::SYS> __sys;
         std::unique_ptr<maixcam2::VO> __vo;
+
+        static AX_U32 SAMPLE_CALC_IMAGE_SIZE(AX_U32 u32Width, AX_U32 u32Height, AX_IMG_FORMAT_E eImgType, AX_U32 u32Stride) {
+            AX_U32 u32Bpp = 0;
+            if (u32Width == 0 || u32Height == 0) {
+                log::error("Invalid width %d or height %d!", u32Width, u32Height);
+                return 0;
+            }
+
+            if (0 == u32Stride) {
+                u32Stride = u32Width;
+            }
+
+            switch (eImgType) {
+                case AX_FORMAT_YUV400:
+                    u32Bpp = 8;
+                    break;
+                case AX_FORMAT_YUV420_PLANAR:
+                case AX_FORMAT_YUV420_SEMIPLANAR:
+                case AX_FORMAT_YUV420_SEMIPLANAR_VU:
+                    u32Bpp = 12;
+                    break;
+                case AX_FORMAT_YUV422_INTERLEAVED_YUYV:
+                case AX_FORMAT_YUV422_INTERLEAVED_UYVY:
+                    u32Bpp = 16;
+                    break;
+                case AX_FORMAT_YUV444_PACKED:
+                case AX_FORMAT_RGB888:
+                case AX_FORMAT_BGR888:
+                    u32Bpp = 24;
+                    break;
+                case AX_FORMAT_RGBA8888:
+                case AX_FORMAT_BGRA8888:
+                case AX_FORMAT_ARGB8888:
+                case AX_FORMAT_ABGR8888:
+                    u32Bpp = 32;
+                    break;
+                default:
+                    u32Bpp = 0;
+                    break;
+            }
+
+            return u32Stride * u32Height * u32Bpp / 8;
+        }
+
+        static AX_S32 __ax_ivps_crop_resize_tdp(maixcam2::Frame &in, maixcam2::Frame &out, const AX_IVPS_CROP_RESIZE_ATTR_T *ptAttr, bool update_frame = true) {
+            AX_S32 s32Ret = 0;
+            AX_U64 dst_phy = 0;
+            AX_U8* dst_vir = NULL;
+            AX_VIDEO_FRAME_T stFrameDst = {0}, stFrameSrc = {0};
+            err::check_raise(in.get_video_frame(&stFrameSrc), "get video frame failed");
+            err::check_raise(out.get_video_frame(&stFrameDst), "get video frame failed");
+
+            s32Ret = AX_IVPS_CropResizeTdp(&stFrameSrc, &stFrameDst, ptAttr);
+            if (s32Ret != 0) {
+                return s32Ret;
+            }
+            // log::info(" ========== SRC ++++++++");
+            // __print_video_frame(&stFrameSrc);
+            // log::info(" ========== DST ++++++++");
+            // __print_video_frame(&stFrameDst);static int count = 0;
+            // log::info("crop resize count:%d", count ++);
+            AX_SYS_MinvalidateCache(dst_phy, dst_vir, stFrameDst.u32FrameSize);
+
+            if (update_frame) {
+                in.set_video_frame(&stFrameSrc);
+                out.set_video_frame(&stFrameDst);
+            }
+            return 0;
+        }
+
+        static AX_S32 __ax_ivps_crop_resize_vpp(maixcam2::Frame &in, maixcam2::Frame &out, const AX_IVPS_CROP_RESIZE_ATTR_T *ptAttr) {
+            AX_S32 s32Ret = 0;
+            AX_U64 dst_phy = 0;
+            AX_U8* dst_vir = NULL;
+            AX_VIDEO_FRAME_T stFrameDst = {0}, stFrameSrc = {0};
+            err::check_raise(in.get_video_frame(&stFrameSrc), "get video frame failed");
+            err::check_raise(out.get_video_frame(&stFrameDst), "get video frame failed");
+            // log::info(" ========== SRC ++++++++");
+            // __print_video_frame(&stFrameSrc);
+            // log::info(" ========== DST ++++++++");
+            // __print_video_frame(&stFrameDst);static int count = 0;
+            // log::info("crop resize count:%d", count ++);
+            s32Ret = AX_IVPS_CropResizeVpp(&stFrameSrc, &stFrameDst, ptAttr);
+            if (s32Ret != 0) {
+                return s32Ret;
+            }
+
+            AX_SYS_MinvalidateCache(dst_phy, dst_vir, stFrameDst.u32FrameSize);
+            return 0;
+        }
 
         static void __config_vo_param(maixcam2::ax_vo_param_t *new_param, int width, int height, image::Format format, int rotate) {
             memset(new_param, 0, sizeof(maixcam2::ax_vo_param_t));
@@ -136,6 +274,94 @@ namespace maix::display
             memcpy(&new_param->vo_cfg, &vo_cfg, sizeof(vo_cfg));
             memcpy(&new_param->sync_info, &sync_info, sizeof(sync_info));
         }
+
+        class CmmPool {
+            AX_POOL _pool_id;
+            AX_S32 _pool_size;
+            AX_S32 _pool_count;
+
+            static AX_POOL __create_pool(AX_S32 size, AX_S32 count) {
+                AX_POOL_CONFIG_T stPoolCfg = {0};
+                stPoolCfg.MetaSize = 512;
+                stPoolCfg.BlkCnt = count;
+                stPoolCfg.BlkSize = size;
+                stPoolCfg.CacheMode = AX_POOL_CACHE_MODE_NONCACHE;
+                strcpy((char *)stPoolCfg.PartitionName, "anonymous");
+                AX_POOL pool_id = AX_POOL_CreatePool(&stPoolCfg);
+                if (pool_id == AX_INVALID_POOLID) {
+                    log::info("AX_POOL_CreatePool failed, u32BlkCnt = %d, u64BlkSize = 0x%llx, u64MetaSize = 0x%llx, ret:%#x", stPoolCfg.BlkCnt,
+                        stPoolCfg.BlkSize, stPoolCfg.MetaSize, pool_id);
+                    return AX_INVALID_POOLID;
+                }
+                return pool_id;
+            }
+
+            static int __release_pool(AX_POOL pool_id) {
+                AX_S32 ret = 0;
+                if (pool_id != AX_INVALID_POOLID) {
+                    ret = AX_POOL_DestroyPool(pool_id);
+                    if (ret != 0) {
+                        log::info("AX_POOL_DestroyPool failed, PoolId = 0x%d, ret:%#xn", pool_id, ret);
+                    }
+                }
+                return ret;
+            }
+
+        public:
+            CmmPool(){
+                _pool_id = AX_INVALID_POOLID;
+                _pool_size = 0;
+                _pool_count = 0;
+            }
+
+            ~CmmPool() {
+                deinit();
+            }
+
+            err::Err init(int size, int count) {
+                _pool_id = __create_pool(size, count);
+                if (_pool_id == AX_INVALID_POOLID) {
+                    return err::ERR_NO_MEM;
+                } else {
+                    return err::ERR_NONE;
+                }
+            }
+
+            err::Err reset(int size, int count) {
+                err::Err ret = err::ERR_NONE;
+                if (size != _pool_size || count != _pool_count) {
+                    if ((ret = deinit()) == err::ERR_NONE) {
+                        return ret;
+                    }
+
+                    if ((ret = init(size, count)) == err::ERR_NONE) {
+                        return ret;
+                    }
+                }
+                return err::ERR_NONE;
+            }
+
+            err::Err deinit() {
+                if (0 != __release_pool(_pool_id)) {
+                    return err::ERR_RUNTIME;
+                }
+                _pool_id = AX_INVALID_POOLID;
+                return err::ERR_NONE;
+            }
+
+            AX_POOL pool_id() {
+                return _pool_id;
+            }
+
+            AX_POOL pool_size() {
+                return _pool_size;
+            }
+
+            AX_POOL pool_count() {
+                return _pool_count;
+            }
+        };
+
     public:
         DisplayAx(const string &device, int width, int height, image::Format format)
         {
@@ -151,7 +377,6 @@ namespace maix::display
             this->_invert_flip = false;
             this->_invert_mirror = false;
             this->_max_backlight = 50.0;
-            this->_pool_id = AX_INVALID_POOLID;
             this->_layer = 0;       // layer 0 means vedio layer
             err::check_bool_raise(_format == image::FMT_RGB888
                                 || _format == image::FMT_YVU420SP
@@ -176,6 +401,8 @@ namespace maix::display
             int pwm_id = 3;
             pinmap::set_pin_function("B22", "PWM3");
             _bl_pwm = new pwm::PWM(pwm_id, 10000, 50);
+
+            _dst_pool.reset(this->_width*this->_height*image::fmt_size[this->format()], 1);
         }
 
         DisplayAx(int layer, int width, int height, image::Format format)
@@ -192,7 +419,6 @@ namespace maix::display
             this->_invert_flip = false;
             this->_invert_mirror = false;
             this->_max_backlight = 50.0;
-            this->_pool_id = AX_INVALID_POOLID;
             this->_layer = layer;       // layer 0 means vedio layer
                                         // layer 1 means osd layer
             err::check_bool_raise(_format == image::FMT_BGRA8888, "Format not support");
@@ -212,6 +438,8 @@ namespace maix::display
             _bl_pwm = nullptr;
             int pwm_id = 5;
             _bl_pwm = new pwm::PWM(pwm_id, 10000, 50);
+
+            _dst_pool.reset(this->_width*this->_height*image::fmt_size[this->format()], 1);
         }
 
         ~DisplayAx()
@@ -220,11 +448,6 @@ namespace maix::display
             __vo->deinit();
             __vo = nullptr;
             __sys = nullptr;
-
-            if (this->_pool_id != (int)AX_INVALID_POOLID) {
-                AX_POOL_DestroyPool(this->_pool_id);
-                this->_pool_id = AX_INVALID_POOLID;
-            }
 
             if(_bl_pwm && this->_layer == 0)    // _layer = 0, means video layer
             {
@@ -250,6 +473,21 @@ namespace maix::display
         image::Format format()
         {
             return this->_format;
+        }
+
+        static int __reset_src_pool(CmmPool &pool, int width, int height, image::Format format) {
+            int ret = 0;
+            int block_count = 2;
+            int block_size = width * height * image::fmt_size[format];
+            if (width * height * image::fmt_size[format] >= 2560 * 1440 * 3 / 2) {
+                block_count = 3;
+            } else {
+                block_count = 2;
+            }
+            if ((ret = pool.reset(block_size, block_count)) != err::ERR_NONE) {
+                return ret;
+            }
+            return ret;
         }
 
         err::Err open(int width, int height, image::Format format)
@@ -288,25 +526,9 @@ namespace maix::display
             }
 
             if (this->_layer == 0) {
-                AX_POOL_CONFIG_T stPoolCfg = {0};
-                stPoolCfg.MetaSize = 512;
-                if (width * height * image::fmt_size[format] >= 2560 * 1440 * 3 / 2) {
-                    stPoolCfg.BlkCnt = 3;
-                } else {
-                    stPoolCfg.BlkCnt = 2;
+                if ( 0 != __reset_src_pool(_src_pool, width, height, format)) {
+                    log::warn("Failed to reset src pool");
                 }
-                stPoolCfg.BlkSize = width * height * image::fmt_size[format];
-                stPoolCfg.CacheMode = AX_POOL_CACHE_MODE_NONCACHE;
-                strcpy((char *)stPoolCfg.PartitionName, "anonymous");
-                AX_POOL pool_id = AX_POOL_CreatePool(&stPoolCfg);
-                if (pool_id == AX_INVALID_POOLID) {
-                    log::info("AX_POOL_CreatePool failed, u32BlkCnt = %d, u64BlkSize = 0x%llx, u64MetaSize = 0x%llx\n", stPoolCfg.BlkCnt,
-                        stPoolCfg.BlkSize, stPoolCfg.MetaSize);
-                    return err::ERR_RUNTIME;
-                }
-                this->_pool_id = pool_id;
-                this->_pool_size = stPoolCfg.BlkSize;
-                this->_pool_cnt = stPoolCfg.BlkCnt;
             }
 
             this->_ch = ch;
@@ -355,49 +577,112 @@ namespace maix::display
         {
             err::check_bool_raise((img.width() % 2 == 0 && img.height() % 2 == 0), "Image width and height must be a multiple of 2.");
             int format = img.format();
-            // int mmf_fit = 0;
-            // switch (fit) {
-            //     case image::Fit::FIT_FILL: mmf_fit = 0; break;
-            //     case image::Fit::FIT_CONTAIN: mmf_fit = 1; break;
-            //     case image::Fit::FIT_COVER: mmf_fit = 2; break;
-            //     default: mmf_fit = 0; break;
-            // }
 
             if (this->_layer == 0) {
-                if (img.data_size() > this->_pool_size) {
-                    AX_POOL_DestroyPool(this->_pool_id);
-
-                    AX_POOL_CONFIG_T stPoolCfg = {0};
-                    stPoolCfg.MetaSize = 512;
-                    stPoolCfg.BlkCnt = this->_pool_cnt;
-                    stPoolCfg.BlkSize = img.data_size();
-                    if (img.data_size() >= 2560 * 1440 * 3 / 2) {
-                        stPoolCfg.BlkCnt = 3;
-                    } else {
-                        stPoolCfg.BlkCnt = 2;
-                    }
-                    stPoolCfg.CacheMode = AX_POOL_CACHE_MODE_NONCACHE;
-                    strcpy((char *)stPoolCfg.PartitionName, "anonymous");
-                    AX_POOL pool_id = AX_POOL_CreatePool(&stPoolCfg);
-                    if (pool_id == AX_INVALID_POOLID) {
-                        log::info("AX_POOL_CreatePool failed, u32BlkCnt = %d, u64BlkSize = 0x%llx, u64MetaSize = 0x%llx\n", stPoolCfg.BlkCnt,
-                            stPoolCfg.BlkSize, stPoolCfg.MetaSize);
-                        return err::ERR_RUNTIME;
-                    }
-                    this->_pool_id = pool_id;
-                    this->_pool_size = stPoolCfg.BlkSize;
+                if (0 !=__reset_src_pool(_src_pool, img.width(), img.height(), img.format())) {
+                    log::warn("Failed to reset src pool");
                 }
+
+                auto src_img = &img;
+                auto need_delete_src_img = false;
+                // if (fit != image::Fit::FIT_FILL) {
+                //     try {
+                //         if ((img.width() > 460 && img.width() < 630) && (img.height() > 460 && img.height() < 630)) {
+                //             auto new_src_img = src_img->resize(src_img->width(), src_img->height(), fit);
+                //             src_img = new_src_img;
+                //             need_delete_src_img = true;
+                //         }
+                //     } catch (const std::exception &e) {
+                //         log::warn("Failed to resize image: %s", e.what());
+                //     }
+                // }
+
+                auto src_pool_id = _src_pool.pool_id();
 
                 maixcam2::Frame *frame = nullptr;
                 while (frame == nullptr && !app::need_exit()) {
                     try {
-                        frame = new maixcam2::Frame(_pool_id, img.width(), img.height(), img.data(), img.data_size(), maixcam2::get_ax_fmt_from_maix(img.format()));
+                        frame = new maixcam2::Frame(src_pool_id, src_img->width(), src_img->height(), src_img->data(), src_img->data_size(), maixcam2::get_ax_fmt_from_maix(src_img->format()));
                     } catch (...) {
                         time::sleep_ms(5);
                     }
                 }
 
+                switch (fit) {
+                case image::FIT_CONTAIN: // fall through
+                case image::FIT_COVER:
+                {
+                    maixcam2::Frame *new_frame = nullptr;
+                    while (new_frame == nullptr && !app::need_exit()) {
+                        try {
+                            auto dst_pool_id = _dst_pool.pool_id();
+                            auto new_frame_format = src_img->format();
+                            new_frame = new maixcam2::Frame(dst_pool_id, _width, _height, nullptr, 0, maixcam2::get_ax_fmt_from_maix(new_frame_format));
+                            if (new_frame_format >= image::FMT_YVU420SP && new_frame_format <= image::FMT_YUV420P) {
+                                memset(new_frame->data, 0, _width * _height);
+                                memset((uint8_t *)(new_frame->data) + _width * _height, 128, _width * _height / 2);
+                            } else {
+                                memset(new_frame->data, 0, new_frame->len);
+                            }
+                        } catch (...) {
+                            time::sleep_ms(5);
+                        }
+                    }
+
+                    AX_IVPS_CROP_RESIZE_ATTR_T crop_resize_attr;
+                    memset(&crop_resize_attr, 0, sizeof(AX_IVPS_CROP_RESIZE_ATTR_T));
+                    crop_resize_attr.tAspectRatio.nBgColor = (AX_U32)0;
+                    crop_resize_attr.eSclType = AX_IVPS_SCL_TYPE_AUTO;
+                    switch (fit) {
+                    case image::FIT_CONTAIN:
+                    {
+                        crop_resize_attr.eSclInput = AX_IVPS_SCL_INPUT_SHARE;
+                        crop_resize_attr.tAspectRatio.eMode = AX_IVPS_ASPECT_RATIO_AUTO;
+                        crop_resize_attr.tAspectRatio.eAligns[0] = AX_IVPS_ASPECT_RATIO_VERTICAL_CENTER;
+                        crop_resize_attr.tAspectRatio.eAligns[1] = AX_IVPS_ASPECT_RATIO_VERTICAL_CENTER;
+                        crop_resize_attr.tAspectRatio.nBgColor = (AX_U32)0;
+                        AX_S32 ret = __ax_ivps_crop_resize_tdp(*frame, *new_frame, &crop_resize_attr, false);
+                        if (ret != 0) {
+                            log::info("Failed to fit image, ret:%#x", ret);
+                            delete frame;
+                            delete new_frame;
+                            return err::ERR_RUNTIME;
+                        }
+                        break;
+                    }
+                    case image::FIT_COVER:
+                    {
+                        crop_resize_attr.eSclInput = AX_IVPS_SCL_INPUT_MONOPOLY;
+                        crop_resize_attr.tAspectRatio.eMode = AX_IVPS_ASPECT_RATIO_MANUAL;
+                        crop_resize_attr.tAspectRatio.tRect.nX = 0;
+                        crop_resize_attr.tAspectRatio.tRect.nY = 0;
+                        crop_resize_attr.tAspectRatio.tRect.nW = frame->w;
+                        crop_resize_attr.tAspectRatio.tRect.nH = frame->h;
+                        AX_S32 ret = __ax_ivps_crop_resize_tdp(*frame, *new_frame, &crop_resize_attr);
+                        if (ret != 0) {
+                            log::info("Failed to fit image, ret:%#x", ret);
+                            delete frame;
+                            delete new_frame;
+                            return err::ERR_RUNTIME;
+                        }
+                        break;
+                    }
+                    default:break;
+                    }
+
+                    // fit success, use new frame
+                    delete frame;
+                    frame = new_frame;
+                    break;
+                }
+                default:
+                    // do nothing, include image::FIT_FILL
+                    break;
+                }
+
+
                 if (!frame) {
+                    log::error("Unable to create a frame for display");
                     return err::ERR_RUNTIME;
                 }
 
@@ -416,9 +701,9 @@ namespace maix::display
                     break;
                 case image::FMT_BGRA8888:
                 {
-                    int width = img.width(), height = img.height();
+                    int width = src_img->width(), height = src_img->height();
                     image::Image *rgb = new image::Image(width, height, image::FMT_RGB888);
-                    uint8_t *src = (uint8_t *)img.data(), *dst = (uint8_t *)rgb->data();
+                    uint8_t *src = (uint8_t *)src_img->data(), *dst = (uint8_t *)rgb->data();
                     for (int i = 0; i < height; i ++) {
                         for (int j = 0; j < width; j ++) {
                             dst[(i * width + j) * 3 + 0] = src[(i * width + j) * 4 + 2];
@@ -437,9 +722,9 @@ namespace maix::display
                 }
                 case image::FMT_RGBA8888:
                 {
-                    int width = img.width(), height = img.height();
+                    int width = src_img->width(), height = src_img->height();
                     image::Image *rgb = new image::Image(width, height, image::FMT_RGB888);
-                    uint8_t *src = (uint8_t *)img.data(), *dst = (uint8_t *)rgb->data();
+                    uint8_t *src = (uint8_t *)src_img->data(), *dst = (uint8_t *)rgb->data();
                     for (int i = 0; i < height; i ++) {
                         for (int j = 0; j < width; j ++) {
                             dst[(i * width + j) * 3 + 0] = src[(i * width + j) * 4 + 0];
@@ -466,6 +751,11 @@ namespace maix::display
                 if (frame) {
                     delete frame;
                     frame = nullptr;
+                }
+
+                if (need_delete_src_img) {
+                    delete src_img;
+                    src_img = nullptr;
                 }
             } else if (this->_layer == 1) {
                 image::Image *new_img = &img;
@@ -581,9 +871,8 @@ namespace maix::display
         bool _invert_flip;
         bool _invert_mirror;
         float _max_backlight;
-        int _pool_id;
-        int _pool_size;
-        int _pool_cnt;
+        CmmPool _src_pool;
+        CmmPool _dst_pool;
         pwm::PWM *_bl_pwm;
     };
 }
