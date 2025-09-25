@@ -1,34 +1,19 @@
+set(uchardet_version_str "${CONFIG_UCHARDET_VERSION_MAJOR}.${CONFIG_UCHARDET_VERSION_MINOR}.${CONFIG_UCHARDET_VERSION_PATCH}")
+set(src_path "${DL_EXTRACTED_PATH}/uchardet_srcs/uchardet-${uchardet_version_str}")
 
-list(APPEND ADD_INCLUDE "include" "include/speech")
-list(APPEND ADD_PRIVATE_INCLUDE "include_private")
-append_srcs_dir(ADD_SRCS "src")
-list(APPEND ADD_REQUIREMENTS basic ini vision clipper2)
-
-if(PLATFORM_MAIXCAM)
-    append_srcs_dir(ADD_SRCS "port/maixcam")
-    list(APPEND ADD_REQUIREMENTS maixcam_lib alsa_lib)
-    list(APPEND ADD_DYNAMIC_LIB "lib/libms_asr_sg2002.so")
-    list(APPEND ADD_DEFINITIONS -DDR_WAV_IMPLEMENTATION)
-elseif(PLATFORM_MAIXCAM2)
-    append_srcs_dir(ADD_SRCS "port/maixcam2")
-    list(APPEND ADD_REQUIREMENTS eigen librosa_simple OpenCC onnxruntime uchardet)
-else()
-    list(APPEND ADD_PRIVATE_INCLUDE "port/linux")
-    append_srcs_dir(ADD_SRCS "port/linux")
-endif()
-
-register_component()
-
-# Config enable component2 or not in Kconfig
-################# Add include #################
-# list(APPEND ADD_INCLUDE "include"
-#     )
-# list(APPEND ADD_PRIVATE_INCLUDE "include_private")
+############### Add include ###################
+list(APPEND ADD_INCLUDE "${src_path}/src"
+    )
+# list(APPEND ADD_PRIVATE_INCLUDE "")
 ###############################################
 
-############## Add source files ###############
-# list(APPEND ADD_SRCS  "src/lib2.c"
+############ Add source files #################
+# list(APPEND ADD_SRCS  "src/main.c"
+#                       "src/test.c"
 #     )
+append_srcs_dir(ADD_SRCS "${src_path}/src")       # append source file in src dir to var ADD_SRCS
+append_srcs_dir(ADD_SRCS "${src_path}/src/LangModels")
+# list(REMOVE_ITEM COMPONENT_SRCS "src/test2.c")
 # FILE(GLOB_RECURSE EXTRA_SRC  "src/*.c")
 # FILE(GLOB EXTRA_SRC  "src/*.c")
 # list(APPEND ADD_SRCS  ${EXTRA_SRC})
@@ -41,16 +26,21 @@ register_component()
 # SET_SOURCE_FILES_PROPERTIES(${ADD_ASM_SRCS} PROPERTIES COMPILE_FLAGS "-x assembler-with-cpp -D BBBBB")
 ###############################################
 
-
 ###### Add required/dependent components ######
-# list(APPEND ADD_REQUIREMENTS basic ini)
+# list(APPEND ADD_REQUIREMENTS basic)
+# list(APPEND ADD_FILE_DEPENDS include/axx.h)
+# set_property(SOURCE ${python_h_path} PROPERTY GENERATED 1)
+# add_custom_command(OUTPUT include/axx.h
+#             COMMAND echo "" > include/axx.h
+#             COMMENT "Generating axx.h ..."
+#         )
 ###############################################
 
 ###### Add link search path for requirements/libs ######
 # list(APPEND ADD_LINK_SEARCH_PATH "${CONFIG_TOOLCHAIN_PATH}/lib")
 # list(APPEND ADD_REQUIREMENTS pthread m)  # add system libs, pthread and math lib for example here
-# set (OpenCV_DIR opencv/lib/cmake/opencv4)
-# find_package(OpenCV REQUIRED)
+# set (uchardet_DIR uchardet/lib/cmake/uchardet4)
+# find_package(uchardet REQUIRED)
 ###############################################
 
 ############ Add static libs ##################
@@ -80,6 +70,10 @@ register_component()
 # set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--start-group libmaix/libtest.a -ltest2 -Wl,--end-group" PARENT_SCOPE)
 ###############################################
 
+# write build python version to CMAKE_BINARY_DIR/config/python_version.txt
+# file(WRITE ${CMAKE_BINARY_DIR}/config/uchardet_version.txt "${uchardet_version_str}")
+
+
 # register component, DYNAMIC or SHARED flags will make component compiled to dynamic(shared) lib
-# register_component()
+register_component()
 

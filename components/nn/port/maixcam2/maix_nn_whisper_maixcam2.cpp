@@ -17,6 +17,8 @@
 #include <fstream>
 #include "opencc.h"
 #include "maix_nn_whisper.hpp"
+#include "uchardet.h"
+#include <iconv.h>
 
 namespace maix::nn
 {
@@ -484,43 +486,92 @@ namespace maix::nn
     //     }printf("\r\n");
     // }
 
-    static bool isValidUTF8(const std::string& str) {
-        size_t i = 0;
-        while (i < str.size()) {
-            unsigned char c = static_cast<unsigned char>(str[i]);
-            size_t len = 0;
+    // static bool isValidUTF8(const std::string& str) {
+    //     size_t i = 0;
+    //     while (i < str.size()) {
+    //         unsigned char c = static_cast<unsigned char>(str[i]);
+    //         size_t len = 0;
 
-            if ((c & 0x80) == 0x00) {
-                // 1-byte (ASCII)
-                len = 1;
-            } else if ((c & 0xE0) == 0xC0) {
-                // 2-byte
-                len = 2;
-            } else if ((c & 0xF0) == 0xE0) {
-                // 3-byte
-                len = 3;
-            } else if ((c & 0xF8) == 0xF0) {
-                // 4-byte
-                len = 4;
-            } else {
-                return false; // 非法的起始字节
-            }
+    //         if ((c & 0x80) == 0x00) {
+    //             // 1-byte (ASCII)
+    //             len = 1;
+    //         } else if ((c & 0xE0) == 0xC0) {
+    //             // 2-byte
+    //             len = 2;
+    //         } else if ((c & 0xF0) == 0xE0) {
+    //             // 3-byte
+    //             len = 3;
+    //         } else if ((c & 0xF8) == 0xF0) {
+    //             // 4-byte
+    //             len = 4;
+    //         } else {
+    //             return false; // 非法的起始字节
+    //         }
 
-            // 检查长度
-            if (i + len > str.size()) {
-                return false; // 不够字节
-            }
+    //         // 检查长度
+    //         if (i + len > str.size()) {
+    //             return false; // 不够字节
+    //         }
 
-            // 检查后续字节是否是 10xxxxxx
-            for (size_t j = 1; j < len; ++j) {
-                if ((static_cast<unsigned char>(str[i + j]) & 0xC0) != 0x80) {
-                    return false;
-                }
-            }
+    //         // 检查后续字节是否是 10xxxxxx
+    //         for (size_t j = 1; j < len; ++j) {
+    //             if ((static_cast<unsigned char>(str[i + j]) & 0xC0) != 0x80) {
+    //                 return false;
+    //             }
+    //         }
 
-            i += len;
+    //         i += len;
+    //     }
+    //     return true;
+    // }
+
+    static std::string _detect_charset(std::string &text) {
+        uchardet_t  handle = uchardet_new();
+        int retval = uchardet_handle_data(handle, (char *)text.c_str(), text.size());
+        if (retval != 0) {
+            uchardet_delete(handle);
+            return "";
         }
-        return true;
+        uchardet_data_end(handle);
+
+        const char *detected = uchardet_get_charset(handle);
+        std::string charset = detected ? detected : "";
+        uchardet_delete(handle);
+
+        for (size_t i = 0; i < charset.size(); i++) {
+            charset[i] = std::tolower(static_cast<unsigned char>(charset[i]));
+        }
+
+        return charset;
+    }
+
+    // 转码函数：from_charset -> UTF-8
+    static std::string _convert_to_utf8(const std::string &input, const std::string &from_charset) {
+        iconv_t cd = iconv_open("UTF-8", from_charset.c_str());
+        if (cd == (iconv_t)-1) {
+            throw std::runtime_error("iconv_open failed for charset: " + from_charset);
+        }
+
+        size_t in_len = input.size();
+        size_t out_buf_size = in_len * 4 + 1; // UTF-8 可能更长
+        std::string output;
+        output.resize(out_buf_size);
+
+        char *in_ptr = const_cast<char*>(input.data());
+        char *out_ptr = &output[0];
+        size_t in_bytes = in_len;
+        size_t out_bytes = out_buf_size;
+
+        if (iconv(cd, &in_ptr, &in_bytes, &out_ptr, &out_bytes) == (size_t)-1) {
+            iconv_close(cd);
+            throw std::runtime_error("iconv conversion failed");
+        }
+
+        size_t converted_len = out_buf_size - out_bytes;
+        output.resize(converted_len); // 去掉多余空间
+        iconv_close(cd);
+
+        return output;
     }
 
     /**
@@ -731,14 +782,20 @@ namespace maix::nn
             char str[1024] = {0};
             base64_decode((const uint8_t*)param->token_tables[i].c_str(), (uint32_t)param->token_tables[i].size(), str);
             auto new_str = std::string(str);
-            if (!isValidUTF8(new_str)) {
-                continue;
-            }
+            // if (!isValidUTF8(new_str)) {
+            //     continue;
+            // }
             s += new_str;
         }
 
         if (param->language == "zh") {
             s = param->simple_converter->Convert(s);
+        }
+
+        auto t = time::ticks_ms();
+        auto charset = _detect_charset(s);
+        if (charset != "utf-8") {
+            s = _convert_to_utf8(s, charset);
         }
         return s;
     }

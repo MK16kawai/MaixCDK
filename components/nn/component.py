@@ -19,7 +19,8 @@ def add_requirements(platform : str, find_dirs : list):
             "eigen",
             "librosa_simple",
             "OpenCC",
-            "onnxruntime"
+            "onnxruntime",
+            "uchardet"
         ])
     elif platform == "linux":
         pass

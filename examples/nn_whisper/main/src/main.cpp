@@ -13,17 +13,22 @@ int _main(int argc, char *argv[])
 
     int ret = 0;
     err::Err e;
-    std::string help = "Usage: " + std::string(argv[0]) + " <mud_model_path> <wav_path>";
+    std::string help = "Usage: " + std::string(argv[0]) + " <mud_model_path> <wav_path> [<language>]";
 
-    if (argc < 2)
+    if (argc < 2 || !strcmp(argv[1], "--help") || !strcmp(argv[1], "-h"))
     {
         log::info(help.c_str());
-        return -1;
+        return 0;
     }
 
     const char *model_path = argv[1];
     std::string language = "zh";
+    if (argc > 3)
+    {
+        language = argv[3];
+    }
 
+    log::info("%s %s %s %s", argv[0], model_path, argv[2], language.c_str());
     nn::Whisper whisper("", language);
     e = whisper.load(model_path);
     err::check_raise(e, "load model failed");

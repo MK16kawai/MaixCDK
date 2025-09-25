@@ -1,0 +1,20 @@
+# uchardet version major minor patch
+menu "uchardet version"
+config UCHARDET_VERSION_MAJOR
+    int "uchardet package major version"
+    default 0
+    help
+      uchardet package major version, 0 means auto select according to board
+
+config UCHARDET_VERSION_MINOR
+    int "uchardet package minor version"
+    default 0
+    help
+      uchardet package minor version
+
+config UCHARDET_VERSION_PATCH
+    int "uchardet package patch version"
+    default 5
+    help
+      uchardet package patch version
+endmenu
