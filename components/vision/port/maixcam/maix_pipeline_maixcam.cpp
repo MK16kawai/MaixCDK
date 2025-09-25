@@ -283,6 +283,11 @@ namespace maix::pipeline {
                 if (param->is_vdec) {
                     CVI_VDEC_ReleaseFrame(param->channel, &param->frame);
                 } else if (param->is_vpss_chn) {
+                    int image_size = param->frame.stVFrame.u32Length[0]
+                                + param->frame.stVFrame.u32Length[1]
+                                + param->frame.stVFrame.u32Length[2];
+                    CVI_VOID *vir_addr;
+                    CVI_SYS_Munmap(param->frame.stVFrame.pu8VirAddr[0], image_size);
                     CVI_VPSS_ReleaseChnFrame(param->group, param->channel, &param->frame);
                 }
             }
