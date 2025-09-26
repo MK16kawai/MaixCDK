@@ -2,6 +2,15 @@
 
 set -e
 
+#############################################
+# 定义不同平台的黑名单
+
+blacklist_linux=()
+blacklist_maixcam=()
+blacklist_maixcam2=("app_speech")
+
+#############################################
+
 platform="maixcam"
 
 function platform_setting()
@@ -58,11 +67,29 @@ else
     platform_setting
 fi
 
+# 获取当前平台对应的黑名单数组
+blacklist_var="blacklist_${platform}[@]"
+blacklist=("${!blacklist_var}")
+
 rm -rf apps/
 
 for dir in */; do
   if [ -d "$dir" ]; then
     if [[ $dir == app* && $dir != apps* ]]; then
+      # 检查是否在黑名单
+      skip=false
+      for b in "${blacklist[@]}"; do
+        if [[ "$dir" == "$b/" ]]; then
+          echo "skip $dir for $platform"
+          skip=true
+          break
+        fi
+      done
+
+      if $skip; then
+        continue
+      fi
+
       echo "----- build ${dir} -----"
       build_start "${dir%/}"
       echo "----- build ${dir} done -----"
