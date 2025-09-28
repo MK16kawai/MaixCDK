@@ -608,6 +608,10 @@ namespace maix::display
                     }
                 }
 
+                if (!frame) {
+                    return err::ERR_RUNTIME;
+                }
+
                 switch (fit) {
                 case image::FIT_CONTAIN: // fall through
                 case image::FIT_COVER:
@@ -628,6 +632,15 @@ namespace maix::display
                             time::sleep_ms(5);
                         }
                     }
+
+                    if (!new_frame) {
+                        if (frame) {
+                            delete frame;
+                            frame = nullptr;
+                        }
+                        return err::ERR_RUNTIME;
+                    }
+
 
                     AX_IVPS_CROP_RESIZE_ATTR_T crop_resize_attr;
                     memset(&crop_resize_attr, 0, sizeof(AX_IVPS_CROP_RESIZE_ATTR_T));
