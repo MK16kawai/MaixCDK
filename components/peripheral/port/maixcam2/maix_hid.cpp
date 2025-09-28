@@ -14,43 +14,57 @@
 #include <linux/i2c-dev.h>
 #include <linux/i2c.h>
 #include <sys/ioctl.h>
+#include "maix_app.hpp"
 
 #define DEV_PATH "/dev/hidg%d"
 
 namespace maix::peripheral::hid
 {
+
+    #define KEYBOARD_PATH "/etc/configfs/usb_gadget/g1/functions/hid.GS0/dev"
+    #define MOUSE_PATH "/etc/configfs/usb_gadget/g1/functions/hid.GS1/dev"
+    #define TOUCHPAD_PATH "/etc/configfs/usb_gadget/g1/functions/hid.GS2/dev"
+
+    static int _read_hid_dev_idx(const std::string &path)
+    {
+        FILE* fp = fopen(path.c_str(), "r");
+        if (!fp) return -1;
+        int left, right;
+        while (fscanf(fp, "%d:%d", &left, &right) == 2) {
+        }
+        fclose(fp);
+        return right;
+    }
+
     static int get_hid_device_idx(hid::DeviceType device_type)
     {
-        int find_mouse = fs::exists("/boot/usb.mouse") ? 1 : 0;
-        int find_touchpad = fs::exists("/boot/usb.touchpad") ? 1 : 0;
-        int find_keyboard = fs::exists("/boot/usb.keyboard") ? 1 : 0;
+        int enabled_keyboard = app::get_sys_config_kv("usb", "hid_keyboard") == "1" ? 1 : 0;
+        int enabled_mouse = app::get_sys_config_kv("usb", "hid_mouse") == "1"  ? 1 : 0;
+        int enabled_touchpad = app::get_sys_config_kv("usb", "hid_touchpad") == "1"  ? 1 : 0;
         int id = -1;
 
         switch (device_type) {
         case DEVICE_KEYBOARD:
         {
-            if (find_keyboard) {
-                id = 0;
+            if(enabled_keyboard)
+            {
+                id = _read_hid_dev_idx(KEYBOARD_PATH);
             }
             break;
         }
         case DEVICE_MOUSE:
         {
-            if (find_keyboard && find_mouse) {
-                id = 1;
-            } else if (!find_keyboard && find_mouse) {
-                id = 0;
+            if(enabled_mouse)
+            {
+                id = _read_hid_dev_idx(MOUSE_PATH);
             }
             break;
         }
         case DEVICE_TOUCHPAD:
         {
-            if ((find_keyboard + find_mouse == 2) && find_touchpad) {
-                id = 2;
-            } else if ((find_keyboard + find_mouse == 1) && find_touchpad) {
-                id = 1;
-            } else if (!(find_keyboard + find_mouse) && find_touchpad) {
-                id = 0;
+            if(enabled_touchpad)
+            {
+                id = _read_hid_dev_idx(TOUCHPAD_PATH);
             }
             break;
         }

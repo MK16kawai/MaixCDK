@@ -74,6 +74,55 @@ namespace maix::display
         return 0;
     }
 
+    static int invert_bgr888_to_rgb565(unsigned char *src, int srcw, int srch, unsigned char *dst)
+    {
+        if (!src || !dst)
+            return -1;
+
+        uint16_t *out = (uint16_t *)dst;
+
+#if __riscv_vector
+        for (int y = 0; y < srch; ++y) {
+            unsigned char *src_row = src + y * srcw * 3;
+            uint16_t *out_row = out + y * srcw;
+
+            int x = 0;
+            size_t vl;
+            for (; (vl = vsetvl_e8m1(srcw - x)) > 0; x += vl) {
+                vuint8m1_t vecR = vlse8_v_u8m1(src_row + x * 3 + 2, 3, vl);
+                vuint8m1_t vecG = vlse8_v_u8m1(src_row + x * 3 + 1, 3, vl);
+                vuint8m1_t vecB = vlse8_v_u8m1(src_row + x * 3 + 0, 3, vl);
+
+                vuint16m2_t vecR5 = vsrl_vx_u16m2(vwcvtu_x_x_v_u16m2(vecR, vl), 3, vl);
+                vuint16m2_t vecG6 = vsrl_vx_u16m2(vwcvtu_x_x_v_u16m2(vecG, vl), 2, vl);
+                vuint16m2_t vecB5 = vsrl_vx_u16m2(vwcvtu_x_x_v_u16m2(vecB, vl), 3, vl);
+
+                vuint16m2_t pixel = vor_vv_u16m2(vor_vv_u16m2(vsll_vx_u16m2(vecR5, 11, vl), vsll_vx_u16m2(vecG6, 5, vl), vl), vecB5, vl);
+
+                vse16_v_u16m2(out_row + x, pixel, vl);
+            }
+        }
+#else
+        for (int y = 0; y < srch; ++y) {
+            unsigned char *src_row = src + y * srcw * 3;
+            uint16_t *out_row = out + y * srcw;
+
+            for (int x = 0; x < srcw; ++x) {
+                unsigned char R = src_row[x * 3 + 2];
+                unsigned char G = src_row[x * 3 + 1];
+                unsigned char B = src_row[x * 3 + 0];
+
+                uint16_t pixel = ((R >> 3) << 11) |
+                                 ((G >> 2) << 5)  |
+                                 (B >> 3);
+
+                out_row[x] = pixel;
+            }
+        }
+#endif
+        return 0;
+    }
+
     static int invert_yvu420sp_to_rgb565(unsigned char *src, int srcw, int srch, unsigned char *dst)
     {
         if (!src || !dst)
@@ -236,31 +285,34 @@ namespace maix::display
                 return err::ERR_NONE;
             }
 
-            struct fb_var_screeninfo vinfo;
-            struct fb_fix_screeninfo finfo;
             _fbfd = ::open(_device.c_str(), O_RDWR);
             if (_fbfd == -1) {
                 log::error("Error opening %s", _device.c_str());
                 return err::ERR_RUNTIME;
             }
-            if (ioctl(_fbfd, FBIOGET_FSCREENINFO, &finfo) == -1) {
+            if (ioctl(_fbfd, FBIOGET_FSCREENINFO, &_finfo) == -1) {
                 log::error("Error reading fixed information from %s", _device.c_str());
                 ::close(_fbfd);
                 return err::ERR_IO;
             }
-            if (ioctl(_fbfd, FBIOGET_VSCREENINFO, &vinfo) == -1) {
+            if (ioctl(_fbfd, FBIOGET_VSCREENINFO, &_vinfo) == -1) {
                 log::error("Error reading variable information from %s", _device.c_str());
                 ::close(_fbfd);
                 return err::ERR_IO;
             }
 
-            _width = vinfo.xres;
-            _height = vinfo.yres;
-            _xres_virtual = vinfo.xres_virtual;
-            _yres_virtual = vinfo.yres_virtual;
-            _bpp = vinfo.bits_per_pixel;
-            _line_length = finfo.line_length;
-            _screensize = vinfo.yres_virtual * finfo.line_length;
+            _width = _vinfo.xres;
+            _height = _vinfo.yres;
+            _xres_virtual = _vinfo.xres_virtual;
+            _yres_virtual = _vinfo.yres_virtual;
+            _bpp = _vinfo.bits_per_pixel;
+            _line_length = _finfo.line_length;
+            _screensize = _vinfo.yres * _finfo.line_length;
+            _buff_size = _vinfo.yres_virtual * _finfo.line_length;
+            _buff_num = _vinfo.yres_virtual / _vinfo.yres;
+            _curr_buff_idx = 0;
+
+            log::info("buff num: %d, yres_virtual: %d, yres: %d", _buff_num, _vinfo.yres_virtual, _vinfo.yres);
 
             if (_bpp != 16 && _bpp != 18 && _bpp != 24 && _bpp != 32) {
                 log::error("Not support bpp: %d", _bpp);
@@ -268,11 +320,21 @@ namespace maix::display
                 return err::ERR_ARGS;
             }
 
-            _fbp = (unsigned char *)mmap(0, _screensize, PROT_READ | PROT_WRITE, MAP_SHARED, _fbfd, 0);
+            _fbp = (unsigned char *)mmap(0, _buff_size, PROT_READ | PROT_WRITE, MAP_SHARED, _fbfd, 0);
             if (_fbp == MAP_FAILED) {
                 log::error("Error mapping framebuffer to memory");
                 ::close(_fbfd);
                 return err::ERR_NO_MEM;
+            }
+
+            if (_vinfo.yoffset != 0)
+            {
+                _vinfo.yoffset = 0;
+                if (ioctl(_fbfd, FBIOPAN_DISPLAY, &_vinfo) == -1) {
+                    log::error("Error write var information to %s", _device.c_str());
+                    ::close(_fbfd);
+                    return err::ERR_IO;
+                }
             }
 
             _opened = true;
@@ -284,8 +346,10 @@ namespace maix::display
             if (!this->_opened)
                 return err::ERR_NONE;
 
-            memset(_fbp, 0, _screensize);
-            munmap(_fbp, _screensize);
+            memset(_fbp, 0, _buff_size);
+            munmap(_fbp, _buff_size);
+            _vinfo.yoffset = 0;
+            ioctl(_fbfd, FBIOPAN_DISPLAY, &_vinfo);
             ::close(_fbfd);
             _opened = false;
             return err::ERR_NONE;
@@ -321,33 +385,49 @@ namespace maix::display
                 img_ptr = fit_img_ptr;
             }
 
-            if (format == image::FMT_BGRA8888)
+            int next_buff_idx = (_curr_buff_idx + 1) % _buff_num;
+            int offset = _screensize * next_buff_idx;
+            if (format == image::FMT_BGRA8888 || format == image::FMT_RGBA8888)
             {
                 if (_bpp == 16 || _bpp == 18) {
                     image::Image *bgra8888_img = nullptr;
                     bgra8888_img = img_ptr->to_format(image::Format::FMT_RGB888);
-                    invert_rgb888_to_rgb565((uint8_t *)bgra8888_img->data(), bgra8888_img->width(), bgra8888_img->height(), _fbp);
+                    invert_rgb888_to_rgb565((uint8_t *)bgra8888_img->data(), bgra8888_img->width(), bgra8888_img->height(), _fbp + offset);
                     delete bgra8888_img;
                 } else if (_bpp == 24) {
-                    image::Image *img = new image::Image(_line_length / (_bpp / 8), _yres_virtual, image::Format::FMT_BGR888, _fbp, _screensize, false);
+                    image::Image *img = new image::Image(_width, _height, image::Format::FMT_BGR888, _fbp + offset, _screensize, false);
                     img->draw_image(0, 0, *img_ptr);
                     delete img;
                 } else if (_bpp == 32) {
-                    image::Image *img = new image::Image(_line_length / (_bpp / 8), _yres_virtual, image::Format::FMT_BGRA8888, _fbp, _screensize, false);
-                    img->draw_image(0, 0, *img_ptr);
-                    delete img;
+                    if(format == image::FMT_RGBA8888)
+                    {
+                        image::Image *img = new image::Image(_width, _height, image::Format::FMT_BGRA8888, _fbp + offset, _screensize, false);
+                        img->draw_image(0, 0, *img_ptr);
+                        delete img;
+                    }
+                    else
+                    {
+                        memcpy(_fbp + offset, img_ptr->data(), _screensize);
+                    }
                 }
             }
-            else if (format == image::FMT_RGB888)
+            else if (format == image::FMT_RGB888 || format == image::FMT_BGR888)
             {
                 if (_bpp == 16 || _bpp == 18) {
-                    invert_rgb888_to_rgb565((uint8_t *)img_ptr->data(), img_ptr->width(), img_ptr->height(), _fbp);
+                    if(format == image::FMT_BGR888)
+                    {
+                        invert_bgr888_to_rgb565((uint8_t *)img_ptr->data(), img_ptr->width(), img_ptr->height(), _fbp + offset);
+                    }
+                    else
+                    {
+                        invert_rgb888_to_rgb565((uint8_t *)img_ptr->data(), img_ptr->width(), img_ptr->height(), _fbp + offset);
+                    }
                 } else if (_bpp == 24) {
-                    image::Image *img = new image::Image(_line_length / (_bpp / 8), _yres_virtual, image::Format::FMT_BGR888, _fbp, _screensize, false);
+                    image::Image *img = new image::Image(_width, _height, image::Format::FMT_BGR888, _fbp + offset, _screensize, false);
                     img->draw_image(0, 0, *img_ptr);
                     delete img;
                 } else if (_bpp == 32) {
-                    image::Image *img = new image::Image(_line_length / (_bpp / 8), _yres_virtual, image::Format::FMT_BGRA8888, _fbp, _screensize, false);
+                    image::Image *img = new image::Image(_width, _height, image::Format::FMT_BGRA8888, _fbp + offset, _screensize, false);
                     img->draw_image(0, 0, *img_ptr);
                     delete img;
                 }
@@ -355,13 +435,13 @@ namespace maix::display
             else if (format == image::FMT_GRAYSCALE)
             {
                 if (_bpp == 16 || _bpp == 18) {
-                    invert_gray_to_rgb565((uint8_t *)img_ptr->data(), img_ptr->width(), img_ptr->height(), _fbp);
+                    invert_gray_to_rgb565((uint8_t *)img_ptr->data(), img_ptr->width(), img_ptr->height(), _fbp + offset);
                 } else if (_bpp == 24) {
-                    image::Image *img = new image::Image(_line_length / (_bpp / 8), _yres_virtual, image::Format::FMT_BGR888, _fbp, _screensize, false);
+                    image::Image *img = new image::Image(_width, _height, image::Format::FMT_BGR888, _fbp + offset, _screensize, false);
                     img->draw_image(0, 0, *img_ptr);
                     delete img;
                 } else if (_bpp == 32) {
-                    image::Image *img = new image::Image(_line_length / (_bpp / 8), _yres_virtual, image::Format::FMT_BGRA8888, _fbp, _screensize, false);
+                    image::Image *img = new image::Image(_width, _height, image::Format::FMT_BGRA8888, _fbp + offset, _screensize, false);
                     img->draw_image(0, 0, *img_ptr);
                     delete img;
                 }
@@ -369,9 +449,9 @@ namespace maix::display
             else if (format == image::FMT_YVU420SP)
             {
                 if (_bpp == 16 || _bpp == 18) {
-                    invert_yvu420sp_to_rgb565((uint8_t *)img_ptr->data(), img_ptr->width(), img_ptr->height(), _fbp);
+                    invert_yvu420sp_to_rgb565((uint8_t *)img_ptr->data(), img_ptr->width(), img_ptr->height(), _fbp + offset);
                 } else if (_bpp == 24) {
-                    image::Image *img = new image::Image(_line_length / (_bpp / 8), _yres_virtual, image::Format::FMT_BGR888, _fbp, _screensize, false);
+                    image::Image *img = new image::Image(_width, _height, image::Format::FMT_BGR888, _fbp + offset, _screensize, false);
                     cv::Mat cv_yvu_img(img_ptr->height() + img_ptr->height() / 2, img_ptr->width(), CV_8UC1, img_ptr->data());
                     cv::Mat cv_rgb_img;
                     cv::cvtColor(cv_yvu_img, cv_rgb_img, cv::COLOR_YUV2RGB_NV21);
@@ -380,7 +460,7 @@ namespace maix::display
                     delete img;
                     delete rgb_img;
                 } else if (_bpp == 32) {
-                    image::Image *img = new image::Image(_line_length / (_bpp / 8), _yres_virtual, image::Format::FMT_BGRA8888, _fbp, _screensize, false);
+                    image::Image *img = new image::Image(_width, _height, image::Format::FMT_BGRA8888, _fbp + offset, _screensize, false);
                     cv::Mat cv_yvu_img(img_ptr->height() + img_ptr->height() / 2, img_ptr->width(), CV_8UC1, img_ptr->data());
                     cv::Mat cv_rgb_img;
                     cv::cvtColor(cv_yvu_img, cv_rgb_img, cv::COLOR_YUV2RGB_NV21);
@@ -394,6 +474,20 @@ namespace maix::display
             {
                 log::error("not support format: %d\n", format);
                 return err::ERR_ARGS;
+            }
+
+            if(_buff_num > 1)
+            {
+                _vinfo.yoffset = next_buff_idx * _vinfo.yres;
+                if (ioctl(_fbfd, FBIOPAN_DISPLAY, &_vinfo) == -1) {
+                    log::error("Error write var information to %s", _device.c_str());
+                    ::close(_fbfd);
+                    if (fit_img_ptr != nullptr) {
+                        delete fit_img_ptr;
+                        fit_img_ptr = nullptr;
+                    }
+                    return err::ERR_IO;
+                }
             }
 
             if (fit_img_ptr != nullptr) {
@@ -468,7 +562,12 @@ namespace maix::display
         unsigned int _yres_virtual;
         unsigned int _line_length;
         long int _screensize = 0;
+        long int _buff_size = 0;
         int _bpp;
+        int _buff_num;
+        int _curr_buff_idx;
+        struct fb_var_screeninfo _vinfo;
+        struct fb_fix_screeninfo _finfo;
 #ifdef PLATFORM_MAIXCAM
         pwm::PWM *_bl_pwm;
 #endif

@@ -1,6 +1,7 @@
 #include "maix_util.hpp"
 #include "maix_app.hpp"
 #include "signal.h"
+#include "maix_sys.hpp"
 
 namespace maix::sys
 {

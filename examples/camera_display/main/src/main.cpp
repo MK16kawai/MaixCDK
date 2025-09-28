@@ -99,7 +99,9 @@ int _main(int argc, char* argv[])
 
     camera::Camera cam = camera::Camera(cam_w, cam_h, cam_fmt, "", cam_fps, cam_buffer_num, true, raw);
     camera::Camera *cam2 = NULL;
-    display::Display disp = display::Display();
+    // display::Display disp = display::Display();
+    // int width = -1, int height = -1, image::Format format = image::FMT_RGB888, const std::string &device = "", bool open = true);
+    display::Display disp = display::Display(-1, -1, image::FMT_BGRA8888, "/dev/fb0", true);
     display::Display *disp2 = NULL;
     log::info("camera and display open success");
     log::info("camera size: %dx%d", cam.width(), cam.height());

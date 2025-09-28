@@ -431,7 +431,8 @@ namespace maix::image
             else if ((bg.format == image::FMT_RGB888 || bg.format == image::FMT_BGR888 || bg.format == image::FMT_RGBA8888 || bg.format == image::FMT_BGRA8888) &
                 (_format == image::FMT_RGBA8888 || _format == image::FMT_BGRA8888))
             {
-                if(bg.r == bg.g && bg.g == bg.b && bg.alpha == 1)
+                uint8_t alpha = (uint8_t)(bg.alpha * 255);
+                if(bg.r == bg.g && bg.g == bg.b && bg.b == alpha)
                 {
                     memset(_data, bg.r, _data_size);
                 }
@@ -444,7 +445,7 @@ namespace maix::image
                         p[i * 4] = bg.r;
                         p[i * 4 + 1] = bg.g;
                         p[i * 4 + 2] = bg.b;
-                        p[i * 4 + 3] = bg.alpha;
+                        p[i * 4 + 3] = alpha;
                     }
                 }
             }
@@ -615,7 +616,7 @@ namespace maix::image
     {
         void *data = _data;
         std::vector<int> shape;
-        int channels = 1;
+        size_t channels = 1;
 
         if (_format == image::FMT_GRAYSCALE)
         {
@@ -625,7 +626,7 @@ namespace maix::image
         }
         else if (_format < image::FMT_YUV422SP)
         {
-            channels = (int)image::fmt_size[_format];
+            channels = (size_t)image::fmt_size[_format];
             shape = chw ? std::vector<int>{channels, _height, _width}
                         : std::vector<int>{_height, _width, channels};
         }
