@@ -183,6 +183,41 @@ namespace maix::display
         float get_backlight();
 
         /**
+         * Trun on display backlight in milliseconds
+         * @param ms time in milliseconds to turn on backlight, default 500ms, 0 means immediate
+         * @param wait If true, will wait until the backlight is turned on before returning, or will turn on in background. Default is false.
+         * @maixpy maix.display.Display.set_backlight_on
+         */
+        void set_backlight_on(int ms = 500, bool wait = false);
+
+        /**
+         * Trun off display backlight in milliseconds
+         * @param ms time in milliseconds to turn off backlight, default 500ms, 0 means immediate
+         * @param wait If true, will wait until the backlight is turned off before returning, or will turn off in background. Default is false.
+         * @maixpy maix.display.Display.set_backlight_off
+         */
+        void set_backlight_off(int ms = 500, bool wait = false);
+
+         /**
+          * Toggle display backlight state in milliseconds
+          * @param ms time in milliseconds to toggle backlight, default 500ms, 0 means immediate
+          * @param wait If true, will wait until the backlight is turned off before returning, or will turn off in background. Default is false.
+          * @maixpy maix.display.Display.set_backlight_toggle
+          */
+        void set_backlight_toggle(int ms = 500, bool wait = false);
+
+        /**
+         * Check if backlight is in setting status
+         * @return true if backlight is in setting status, false if backlight is stable(on or off)
+         * @maixpy maix.display.Display.is_setting_backlight
+         */
+        bool is_setting_backlight()
+        {
+            return _is_setting_backlight;
+        }
+
+
+        /**
          * Get display supported channels(layers)
          */
         int get_ch_nums();
@@ -203,6 +238,8 @@ namespace maix::display
     private:
         std::string _device;
         DisplayBase *_impl; // pointer for implement usage
+        float _backlight_setting_value = 50; // percent
+        bool _is_setting_backlight = false;
     };
 
 

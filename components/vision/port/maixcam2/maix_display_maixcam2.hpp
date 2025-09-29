@@ -825,10 +825,10 @@ namespace maix::display
         {
             if (_bl_pwm) {
                 _bl_pwm->duty(value * _max_backlight / 100.0);
-                _bl_pwm->disable();
+                // _bl_pwm->disable();
                 if(value == 0)
                     return;
-                _bl_pwm->enable();
+                // _bl_pwm->enable();
             }
         }
 

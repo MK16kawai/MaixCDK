@@ -103,6 +103,13 @@ namespace maix::touchscreen
          * @maixpy maix.touchscreen.TouchScreen.is_opened
         */
         bool is_opened();
+
+        /**
+         * Clear touchscreen event buffer
+         * @maixpy maix.touchscreen.TouchScreen.clear
+        */
+        void clear();
+
     private:
         TouchScreen_Base *_impl; // pointer for implementation
         bool _is_opened;

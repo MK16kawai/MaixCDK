@@ -274,7 +274,7 @@ namespace pointing_private {
             int x = 0;
             int y = 0;
             bool pressed = false;
-            if(maix::maix_touchscreen->read0(x, y, pressed) == maix::err::ERR_NOT_READY) {
+            if(!maix::maix_touchscreen || maix::maix_touchscreen->read0(x, y, pressed) == maix::err::ERR_NOT_READY) {
                 PointingData data2;
                 data2.x = -1;
                 data2.y = -1;

@@ -8,6 +8,7 @@
 
 #include "maix_display.hpp"
 #include "maix_log.hpp"
+#include "maix_thread.hpp"
 #include "global_config.h"
 #include "maix_image_trans.hpp"
 #ifdef PLATFORM_LINUX
@@ -115,17 +116,17 @@ namespace maix::display
             this->close();  // Get new param, close and reopen
         }
         std::string bl_v_str = app::get_sys_config_kv("backlight", "value");
-        float bl_v = 50;
+        _backlight_setting_value = 50;
         try
         {
             if(!bl_v_str.empty())
-                bl_v = atof(bl_v_str.c_str());
+                _backlight_setting_value = atof(bl_v_str.c_str());
         }
         catch(...)
         {
-            bl_v = 50;
+            _backlight_setting_value = 50;
         }
-        this->set_backlight(bl_v);
+        this->set_backlight(_backlight_setting_value);
 
         if(!img_trans && maixvision_mode())
         {
@@ -282,6 +283,83 @@ namespace maix::display
     float Display::get_backlight()
     {
         return _impl->get_backlight();
+    }
+
+    void Display::set_backlight_on(int ms, bool wait)
+    {
+        while(is_setting_backlight())
+        {
+            time::sleep_ms(5);
+        }
+        // turn on backlight in ms slowly with create a new thread
+        if(ms < 0)
+            ms = 0;
+        if(ms == 0)
+            set_backlight(_backlight_setting_value);
+        else
+        {
+            _is_setting_backlight = true;
+            auto th = thread::Thread([ms, this](void *args) {
+                int step = 5; // percent
+                int delay = ms / (_backlight_setting_value / step);
+                for(int i = 0; i <= _backlight_setting_value; i += step)
+                {
+                    this->set_backlight(i);
+                    thread::sleep_ms(delay);
+                }
+                this->set_backlight(_backlight_setting_value);
+                _is_setting_backlight = false;
+            }, nullptr);
+            if(wait)
+                th.join();
+            else
+                th.detach();
+        }
+    }
+
+    void Display::set_backlight_off(int ms, bool wait)
+    {
+        while(is_setting_backlight())
+        {
+            time::sleep_ms(5);
+        }
+        // turn off backlight in ms slowly with create a new thread
+        if(ms < 0)
+            ms = 0;
+        if(ms == 0)
+            set_backlight(0);
+        else
+        {
+            _is_setting_backlight = true;
+            float curr_value = this->get_backlight();
+            auto th = thread::Thread([ms, curr_value, this](void *args) {
+                int step = 5; // percent
+                int delay = ms / (curr_value / step);
+                for(int i = curr_value; i >= 0; i -= step)
+                {
+                    this->set_backlight(i);
+                    thread::sleep_ms(delay);
+                }
+                this->set_backlight(0);
+                _is_setting_backlight = false;
+            }, nullptr);
+            if(wait)
+                th.join();
+            else
+                th.detach();
+        }
+    }
+
+    void Display::set_backlight_toggle(int ms, bool wait)
+    {
+        while(is_setting_backlight())
+        {
+            time::sleep_ms(5);
+        }
+        if(this->get_backlight() > 0)
+            this->set_backlight_off(ms, wait);
+        else
+            this->set_backlight_on(ms, wait);
     }
 
     err::Err Display::set_hmirror(bool en) {

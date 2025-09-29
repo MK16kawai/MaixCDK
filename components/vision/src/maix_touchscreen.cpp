@@ -30,7 +30,8 @@ namespace maix::touchscreen
     #warning "This platform not support touchscreen yet"
 #endif
         if (open) {
-            _impl->open();
+            auto e = _impl->open();
+            err::check_raise(e, "open touchscreen failed");
         }
     }
 
@@ -90,6 +91,13 @@ namespace maix::touchscreen
 
     bool TouchScreen::is_opened() {
         return _impl->is_opened();
+    }
+
+    void TouchScreen::clear() {
+        while(available(0))
+        {
+            read0();
+        }
     }
 } // namespace maix::touchscreen
 

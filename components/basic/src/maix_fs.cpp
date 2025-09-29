@@ -391,6 +391,16 @@ namespace maix::fs
         return std::fwrite(buf, 1, size, (FILE *)_fp);
     }
 
+    int File::write(const std::string &str)
+    {
+        // write data to file use std::fwrite
+        if (_fp == nullptr)
+        {
+            return -err::ERR_NOT_READY;
+        }
+        return std::fwrite(str.c_str(), 1, str.size(), (FILE *)_fp);
+    }
+
     int File::write(const std::vector<uint8_t> &buf)
     {
         // write data to file use std::fwrite

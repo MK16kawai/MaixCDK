@@ -285,6 +285,16 @@ namespace maix::fs
         int write(const void *buf, int size);
 
         /**
+         * Write string data to file
+         * @param str string to write
+         * @attention will not ensure data is flush to kernel or written to disk, you can use flush() to flush data to kernel,
+         *            and sync() to ensure data is written to disk.
+         * @return write size if success, -err::Err code if failed
+         * @maixcdk maix.fs.File.write
+         */
+         int write(const std::string &str);
+
+        /**
          * Write data to file API2
          * @param buf buffer to write
          * @attention will not ensure data is flush to kernel or written to disk, you can use flush() to flush data to kernel,
