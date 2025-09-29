@@ -574,6 +574,47 @@ namespace maix::nn
         return output;
     }
 
+    class CheckDuplicate {
+        int _maxsize;
+    public:
+        CheckDuplicate(int maxsize=8) {
+            _maxsize = maxsize;
+        }
+        ~CheckDuplicate() {}
+
+        bool check_array(std::vector<int> &arr, int duplicate_num = 3) {
+            if ((int)(arr.size()) < _maxsize) {
+                return true;
+            }
+            // auto t = time::ticks_ms();
+            int max_count = std::min(_maxsize, (int)arr.size());
+            int duplicate_count = 0;
+            bool res = true;
+
+            // printf("check array:[");
+            // for (auto it = arr.rbegin(); it != arr.rbegin() + max_count; it += 1) {
+            //     printf("%d ", *it);
+            // }
+            // printf("]\r\n");
+
+            auto first = arr.back();
+
+            for (auto it = arr.rbegin(); it != arr.rbegin() + max_count; it += 2) {
+                if (*it == first) {
+                    duplicate_count += 1;
+                }
+
+                if (duplicate_count >= duplicate_num) {
+                    res = false;
+                    break;
+                }
+            }
+            // printf("check array cost time:%lld ms\r\n", time::ticks_ms() - t);
+            return res;
+        }
+    };
+
+
     /**
      * Transcribe pcm data to text
      * @param pcm RAW data
@@ -734,13 +775,23 @@ namespace maix::nn
         decoder_loop_input_tensors.add_tensor("in_n_layer_self_v_cache", decoder_loop_input_tensor2, false, true);
         decoder_loop_input_tensors.add_tensor("n_layer_cross_k", decoder_loop_input_tensor3, false, true);
         decoder_loop_input_tensors.add_tensor("n_layer_cross_v", decoder_loop_input_tensor4, false, true);
+
+        auto check_duplicate = CheckDuplicate();
         for (size_t i = 0; i < WHISPER_N_TEXT_CTX - SOT_SEQUENCE.size(); i++) {
+            if (app::need_exit()) {
+                break;
+            }
+
             if (max_token_id == WHISPER_EOT) {
                 break;
             }
 
             results.push_back(max_token_id);
             tokens[0] = results.back();
+
+            if (false == check_duplicate.check_array(results)) {
+                break;
+            }
 
             auto decoder_loop_input_tensor0 = new tensor::Tensor({1, 1}, tensor::DType::INT32, tokens.data(), false);
             auto decoder_loop_input_tensor5 = new tensor::Tensor({1, 512}, tensor::DType::FLOAT32, param->positional_embedding.data() + offset * WHISPER_N_TEXT_STATE, false);
@@ -792,7 +843,7 @@ namespace maix::nn
             s = param->simple_converter->Convert(s);
         }
 
-        auto t = time::ticks_ms();
+        // auto t = time::ticks_ms();
         auto charset = _detect_charset(s);
         if (charset != "utf-8") {
             s = _convert_to_utf8(s, charset);
