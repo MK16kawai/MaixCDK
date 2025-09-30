@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: Build test for MaixCAM
+name: Build test for MaixCAM2
 
 # Controls when the action will run.
 on:
@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11"] # MaixCAM use 3.11
+        python-version: ["3.13"] # MaixCAM2 use 3.13
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -35,9 +35,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Build MaixCDK Examples
         run: |
-          echo "-- Check python version must python 3.11 --"
-          python3 -c 'import sys;print(sys.version);assert sys.version_info >= (3, 11);assert sys.version_info < (3, 12)'
-          python -c 'import sys;print(sys.version);assert sys.version_info >= (3, 11);assert sys.version_info < (3, 12)'
+          echo "-- Check python version must python 3.13 --"
+          python3 -c 'import sys;print(sys.version);assert sys.version_info >= (3, 13);assert sys.version_info < (3, 14)'
+          python -c 'import sys;print(sys.version);assert sys.version_info >= (3, 13);assert sys.version_info < (3, 14)'
           whereis python
           whereis python3
           # export PATH=~/.local/bin/:$PATH
@@ -48,17 +48,17 @@ jobs:
           sudo apt update -y
           sudo apt install -y cmake autoconf automake libtool git build-essential
           echo "--------------------------------"
-          echo "-- Build Test for MaixCAM now --"
+          echo "-- Build Test for MaixCAM2 now --"
           echo "--------------------------------"
           cd test/test_examples
           chmod +x test_cases.sh
-          ./test_cases.sh maixcam 0
+          ./test_cases.sh maixcam2 0
           echo "------------------------------------"
-          echo "-- Build Projects for MaixCAM now --"
+          echo "-- Build Projects for MaixCAM2 now --"
           echo "------------------------------------"
           cd ../../projects
           chmod +x build_all.sh
-          ./build_all.sh maixcam
+          ./build_all.sh maixcam2
 
       - name: Build doc
         run: |
