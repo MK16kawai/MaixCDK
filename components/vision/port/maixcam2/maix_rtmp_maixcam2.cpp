@@ -920,7 +920,7 @@ namespace maix::rtmp {
 		video_encoder_width = _camera->width();
 		video_encoder_height = _camera->height();
 		video_encoder_format = _camera->format();
-		_camera->set_fps(fps);
+		// _camera->set_fps(fps);
 		// log::info("Create encoder, width:%d height:%d format:%s fps:%d bitrate:%d", video_encoder_width, video_encoder_height, image::fmt_names[video_encoder_format].c_str(), fps, param->bitrate);
 		_video_encoder = new video::Encoder("", video_encoder_width, video_encoder_height, (image::Format)video_encoder_format, video::VIDEO_H264, fps, 50, param->bitrate);
 		if (!_video_encoder) {
