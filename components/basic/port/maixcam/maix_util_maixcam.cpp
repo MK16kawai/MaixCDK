@@ -60,6 +60,8 @@ namespace maix::util
             for (auto& func : *exit_function_list) {
                 func();
             }
+            delete exit_function_list;
+            exit_function_list = nullptr;
         }
     }
 

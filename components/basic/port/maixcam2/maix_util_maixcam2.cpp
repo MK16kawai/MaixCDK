@@ -66,11 +66,24 @@ namespace maix::util
         exit_function_list->push_back(process);
     }
 
+    void unregister_exit_function(void (*process)(void)) {
+        if (exit_function_list) {
+            for (auto iter = exit_function_list->begin(); iter != exit_function_list->end(); iter++) {
+                if (*iter == process) {
+                    exit_function_list->erase(iter);
+                    break;
+                }
+            }
+        }
+    }
+
     void do_exit_function() {
         if (exit_function_list) {
             for (auto& func : *exit_function_list) {
                 func();
             }
+            delete exit_function_list;
+            exit_function_list = nullptr;
         }
     }
 

@@ -11,6 +11,7 @@
 #include "maix_display_base.hpp"
 #include "maix_thread.hpp"
 #include "maix_image.hpp"
+#include "maix_util.hpp"
 #include "maix_time.hpp"
 #include <unistd.h>
 #include "maix_pwm.hpp"
@@ -21,6 +22,7 @@
 #include <sys/mman.h>
 #include "maix_fs.hpp"
 #include <memory>
+#include <list>
 #include "ax_middleware.hpp"
 #include "maix_pinmap.hpp"
 
@@ -34,6 +36,54 @@ namespace maix::display
         UNKNOWN,
     };
     // inline static PanelType __g_panel_type = PanelType::UNKNOWN;
+    class DisplayAx;
+
+    static int __g_ch[2];
+    static maixcam2::SYS *__g_sys[2];
+    static maixcam2::VO * __g_vo[2];
+
+    static void __release_layer0_handler(void) {
+        int layer = 0;
+        if (__g_vo[layer]) {
+            __g_vo[layer]->del_channel(layer, __g_ch[layer]);
+            __g_vo[layer]->deinit();
+            delete __g_vo[layer];
+            __g_vo[layer] = nullptr;
+        }
+        if (__g_sys[layer]) {
+            delete __g_sys[layer];
+            __g_sys[layer] = nullptr;
+
+        }
+    }
+
+    static void __release_layer1_handler(void) {
+        int layer = 1;
+        if (__g_vo[layer]) {
+            __g_vo[layer]->del_channel(layer, __g_ch[layer]);
+            __g_vo[layer]->deinit();
+            delete __g_vo[layer];
+            __g_vo[layer] = nullptr;
+        }
+        if (__g_sys[layer]) {
+            delete __g_sys[layer];
+            __g_sys[layer] = nullptr;
+
+        }
+    }
+
+    static void __register_release_vo(int layer) {
+        if (layer == 0) {
+            util::register_exit_function(__release_layer0_handler);
+        } else if (layer == 1) {
+            util::register_exit_function(__release_layer1_handler);
+        }
+    }
+
+    static void __unregister_release_vo(int layer) {
+        __g_sys[layer] = nullptr;
+        __g_vo[layer] = nullptr;
+    }
 
     __attribute__((unused)) static int _get_vo_max_size(int *width, int *height, int rotate)
     {
@@ -134,8 +184,8 @@ namespace maix::display
 
     class DisplayAx final : public DisplayBase
     {
-        std::unique_ptr<maixcam2::SYS> __sys;
-        std::unique_ptr<maixcam2::VO> __vo;
+        maixcam2::SYS * __sys;
+        maixcam2::VO * __vo;
 
         static AX_U32 SAMPLE_CALC_IMAGE_SIZE(AX_U32 u32Width, AX_U32 u32Height, AX_IMG_FORMAT_E eImgType, AX_U32 u32Stride) {
             AX_U32 u32Bpp = 0;
@@ -385,11 +435,11 @@ namespace maix::display
 
             _get_disp_configs(this->_invert_flip, this->_invert_mirror, _max_backlight);
 
-            __sys = std::make_unique<maixcam2::SYS>();
+            __sys = new maixcam2::SYS;
             err::check_bool_raise(__sys != nullptr, "display construct sys failed");
             err::check_bool_raise(__sys->init() == err::ERR_NONE, "display init sys failed");
 
-            __vo = std::make_unique<maixcam2::VO>();
+            __vo = new maixcam2::VO;
             err::check_bool_raise(__vo != nullptr, "VO init failed");
 
             maixcam2::ax_vo_param_t vo_param;
@@ -403,6 +453,8 @@ namespace maix::display
             _bl_pwm = new pwm::PWM(pwm_id, 10000, 50);
 
             _dst_pool.reset(this->_width*this->_height*image::fmt_size[this->format()], 1);
+            __g_vo[this->_layer] = __vo;
+            __g_sys[this->_layer] = __sys;
         }
 
         DisplayAx(int layer, int width, int height, image::Format format)
@@ -425,11 +477,11 @@ namespace maix::display
 
             _get_disp_configs(this->_invert_flip, this->_invert_mirror, _max_backlight);
 
-            __sys = std::make_unique<maixcam2::SYS>();
+            __sys = new maixcam2::SYS;
             err::check_bool_raise(__sys != nullptr, "display construct sys failed");
             err::check_bool_raise(__sys->init() == err::ERR_NONE, "display init sys failed");
 
-            __vo = std::make_unique<maixcam2::VO>();
+            __vo = new maixcam2::VO;
             err::check_bool_raise(__vo != nullptr, "VO init failed");
 
             maixcam2::ax_vo_param_t vo_param;
@@ -440,14 +492,27 @@ namespace maix::display
             _bl_pwm = new pwm::PWM(pwm_id, 10000, 50);
 
             _dst_pool.reset(this->_width*this->_height*image::fmt_size[this->format()], 1);
+            __g_vo[this->_layer] = __vo;
+            __g_sys[this->_layer] = __sys;
+            __g_ch[this->_layer] = 0;
         }
 
         ~DisplayAx()
         {
-            __vo->del_channel(this->_layer, this->_ch);
-            __vo->deinit();
-            __vo = nullptr;
-            __sys = nullptr;
+            __vo = __g_vo[this->_layer];
+            if (__vo) {
+                __vo->del_channel(this->_layer, this->_ch);
+                __vo->deinit();
+                delete __vo;
+                __vo = nullptr;
+            }
+
+            __sys = __g_sys[this->_layer];
+            if (__sys) {
+                delete __sys;
+                __sys = nullptr;
+            }
+
 
             if(_bl_pwm && this->_layer == 0)    // _layer = 0, means video layer
             {
@@ -533,6 +598,10 @@ namespace maix::display
 
             this->_ch = ch;
             this->_opened = true;
+
+            // run after _opened is true
+            __g_ch[this->_layer] = this->_ch;
+            __register_release_vo(this->_layer);
             return err::ERR_NONE;
         }
 
@@ -541,9 +610,15 @@ namespace maix::display
             if (!this->_opened)
                 return err::ERR_NONE;
 
-            __vo->del_channel(this->_layer, this->_ch);
+            __vo = __g_vo[this->_layer];
+            if (__vo) {
+                __vo->del_channel(this->_layer, this->_ch);
+            }
 
             this->_opened = false;
+
+            // run after _opened is false
+            __unregister_release_vo(this->_layer);
             return err::ERR_NONE;
         }
 
