@@ -42,8 +42,7 @@ namespace maix::display
     static maixcam2::SYS *__g_sys[2];
     static maixcam2::VO * __g_vo[2];
 
-    static void __release_layer0_handler(void) {
-        int layer = 0;
+    static void __release_layer(int layer) {
         if (__g_vo[layer]) {
             __g_vo[layer]->del_channel(layer, __g_ch[layer]);
             __g_vo[layer]->deinit();
@@ -53,23 +52,15 @@ namespace maix::display
         if (__g_sys[layer]) {
             delete __g_sys[layer];
             __g_sys[layer] = nullptr;
-
         }
     }
 
-    static void __release_layer1_handler(void) {
-        int layer = 1;
-        if (__g_vo[layer]) {
-            __g_vo[layer]->del_channel(layer, __g_ch[layer]);
-            __g_vo[layer]->deinit();
-            delete __g_vo[layer];
-            __g_vo[layer] = nullptr;
-        }
-        if (__g_sys[layer]) {
-            delete __g_sys[layer];
-            __g_sys[layer] = nullptr;
+    static void __release_layer0_handler(void) {
+        __release_layer(0);
+    }
 
-        }
+    static void __release_layer1_handler(void) {
+        __release_layer(1);
     }
 
     static void __register_release_vo(int layer) {
@@ -513,7 +504,7 @@ namespace maix::display
                 __sys = nullptr;
             }
 
-
+            __unregister_release_vo(this->_layer);
             if(_bl_pwm && this->_layer == 0)    // _layer = 0, means video layer
             {
                 delete _bl_pwm;
