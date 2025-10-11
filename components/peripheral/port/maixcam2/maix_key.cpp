@@ -36,7 +36,7 @@ static void on_key(int key, int state)
     {
         maix::log::info("exit app by KEY_OK");
         maix::app::set_exit_flag(true);
-        raise(SIGINT);
+        // raise(SIGINT);
     }
 }
 

@@ -21,7 +21,6 @@ namespace maix::sys
         signal(SIGFPE, nullptr);
         signal(SIGKILL, nullptr);
         signal(SIGSEGV, nullptr);
-        exit(0);
     }
 
     void register_default_signal_handle() {

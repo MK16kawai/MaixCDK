@@ -483,7 +483,9 @@ namespace maix::camera
 
     err::Err Camera::open(int width, int height, image::Format format, double fps, int buff_num)
     {
-
+        if (this->is_opened()) {
+            return err::ERR_NONE;
+        }
         err::Err err = err::ERR_NONE;
         int width_tmp = (width == -1) ? _width : width;
         int height_tmp = (height == -1) ? _height : height;

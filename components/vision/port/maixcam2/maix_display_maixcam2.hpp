@@ -25,6 +25,7 @@
 #include <list>
 #include "ax_middleware.hpp"
 #include "maix_pinmap.hpp"
+#include <mutex>
 
 using namespace maix::peripheral;
 using namespace maix::middleware;
@@ -38,11 +39,13 @@ namespace maix::display
     // inline static PanelType __g_panel_type = PanelType::UNKNOWN;
     class DisplayAx;
 
+    static std::mutex __g_mutex;
     static int __g_ch[2];
     static maixcam2::SYS *__g_sys[2];
     static maixcam2::VO * __g_vo[2];
 
     static void __release_layer(int layer) {
+        __g_mutex.lock();
         if (__g_vo[layer]) {
             __g_vo[layer]->del_channel(layer, __g_ch[layer]);
             __g_vo[layer]->deinit();
@@ -53,6 +56,7 @@ namespace maix::display
             delete __g_sys[layer];
             __g_sys[layer] = nullptr;
         }
+        __g_mutex.unlock();
     }
 
     static void __release_layer0_handler(void) {
@@ -63,17 +67,23 @@ namespace maix::display
         __release_layer(1);
     }
 
-    static void __register_release_vo(int layer) {
+    static void __register_release_vo(int layer, maixcam2::SYS *sys, maixcam2::VO *vo) {
         if (layer == 0) {
             util::register_exit_function(__release_layer0_handler);
         } else if (layer == 1) {
             util::register_exit_function(__release_layer1_handler);
         }
+        __g_mutex.lock();
+        __g_sys[layer] = sys;
+        __g_vo[layer] = vo;
+        __g_mutex.unlock();
     }
 
     static void __unregister_release_vo(int layer) {
+        __g_mutex.lock();
         __g_sys[layer] = nullptr;
         __g_vo[layer] = nullptr;
+        __g_mutex.unlock();
     }
 
     __attribute__((unused)) static int _get_vo_max_size(int *width, int *height, int rotate)
@@ -444,8 +454,12 @@ namespace maix::display
             _bl_pwm = new pwm::PWM(pwm_id, 10000, 50);
 
             _dst_pool.reset(this->_width*this->_height*image::fmt_size[this->format()], 1);
+
+            __g_mutex.lock();
             __g_vo[this->_layer] = __vo;
             __g_sys[this->_layer] = __sys;
+            __g_ch[this->_layer] = 0;
+            __g_mutex.unlock();
         }
 
         DisplayAx(int layer, int width, int height, image::Format format)
@@ -483,13 +497,17 @@ namespace maix::display
             _bl_pwm = new pwm::PWM(pwm_id, 10000, 50);
 
             _dst_pool.reset(this->_width*this->_height*image::fmt_size[this->format()], 1);
+
+            __g_mutex.lock();
             __g_vo[this->_layer] = __vo;
             __g_sys[this->_layer] = __sys;
             __g_ch[this->_layer] = 0;
+            __g_mutex.unlock();
         }
 
         ~DisplayAx()
         {
+            __g_mutex.lock();
             __vo = __g_vo[this->_layer];
             if (__vo) {
                 __vo->del_channel(this->_layer, this->_ch);
@@ -503,8 +521,9 @@ namespace maix::display
                 delete __sys;
                 __sys = nullptr;
             }
-
+            __g_mutex.unlock();
             __unregister_release_vo(this->_layer);
+
             if(_bl_pwm && this->_layer == 0)    // _layer = 0, means video layer
             {
                 delete _bl_pwm;
@@ -591,8 +610,10 @@ namespace maix::display
             this->_opened = true;
 
             // run after _opened is true
+            __g_mutex.lock();
             __g_ch[this->_layer] = this->_ch;
-            __register_release_vo(this->_layer);
+            __g_mutex.unlock();
+            __register_release_vo(this->_layer, this->__sys, this->__vo);
             return err::ERR_NONE;
         }
 
@@ -601,10 +622,12 @@ namespace maix::display
             if (!this->_opened)
                 return err::ERR_NONE;
 
+            __g_mutex.lock();
             __vo = __g_vo[this->_layer];
             if (__vo) {
                 __vo->del_channel(this->_layer, this->_ch);
             }
+            __g_mutex.unlock();
 
             this->_opened = false;
 
