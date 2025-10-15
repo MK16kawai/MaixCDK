@@ -248,7 +248,7 @@ namespace maix::display
             // log::info(" ========== DST ++++++++");
             // __print_video_frame(&stFrameDst);static int count = 0;
             // log::info("crop resize count:%d", count ++);
-            AX_SYS_MinvalidateCache(dst_phy, dst_vir, stFrameDst.u32FrameSize);
+            AX_SYS_MinvalidateCache(stFrameDst.u64PhyAddr[0], (AX_U8* )stFrameDst.u64VirAddr[0], stFrameDst.u32FrameSize);
 
             if (update_frame) {
                 in.set_video_frame(&stFrameSrc);
