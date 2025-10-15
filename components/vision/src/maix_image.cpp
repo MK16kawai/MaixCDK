@@ -627,8 +627,8 @@ namespace maix::image
         else if (_format < image::FMT_YUV422SP)
         {
             channels = (size_t)image::fmt_size[_format];
-            shape = chw ? std::vector<int>{channels, _height, _width}
-                        : std::vector<int>{_height, _width, channels};
+            shape = chw ? std::vector<int>{(int)channels, _height, _width}
+                        : std::vector<int>{_height, _width, (int)channels};
         }
         else
         {
@@ -658,7 +658,7 @@ namespace maix::image
             if(channels == 1 || !chw)
             {
                 #pragma omp parallel for
-                for (int i = 0; i < _height * _width * channels; ++i)
+                for (size_t i = 0; i < _height * _width * channels; ++i)
                 {
                     dst[i] = static_cast<float>(src[i]);
                 }

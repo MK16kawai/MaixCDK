@@ -214,7 +214,7 @@ namespace maix::rtsp
         size_t video_pts = 0, audio_pts = 0;
         uint64_t last_ms = time::ticks_ms();
         bool found_first_pps_sps = false;
-        uint64_t last_read_pcm_ms = time::ticks_ms();
+        // uint64_t last_read_pcm_ms = time::ticks_ms();
 
         typedef struct {
             MaixRtspServer *rtsp_server;

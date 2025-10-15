@@ -233,8 +233,6 @@ namespace maix::display
 
         static AX_S32 __ax_ivps_crop_resize_tdp(maixcam2::Frame &in, maixcam2::Frame &out, const AX_IVPS_CROP_RESIZE_ATTR_T *ptAttr, bool update_frame = true) {
             AX_S32 s32Ret = 0;
-            AX_U64 dst_phy = 0;
-            AX_U8* dst_vir = NULL;
             AX_VIDEO_FRAME_T stFrameDst = {0}, stFrameSrc = {0};
             err::check_raise(in.get_video_frame(&stFrameSrc), "get video frame failed");
             err::check_raise(out.get_video_frame(&stFrameDst), "get video frame failed");
