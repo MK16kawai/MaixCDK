@@ -824,6 +824,11 @@ namespace maix::audio
                 param->ax_ao = nullptr;
             }
 
+            if (param->ax_sys) {
+                delete param->ax_sys;
+                param->ax_sys = nullptr;
+            }
+
             if (param->file) {
                 fclose(param->file);
                 param->file = nullptr;
