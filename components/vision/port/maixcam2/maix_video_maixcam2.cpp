@@ -1234,8 +1234,6 @@ namespace maix::video
         image::Image *img = NULL;
         video::Context *context = NULL;
         uint64_t last_pts = 0;
-        uint64_t curr_pts = param->next_pts;
-_retry:
         while (av_read_frame(pFormatContext, pPacket) >= 0) {
             if (pPacket->stream_index == video_stream_index) {
                 last_pts = _last_pts;
@@ -1393,7 +1391,12 @@ __vdec_exit:
                     av_packet_unref(pPacket);
 
                     free(decode_data);
-                    break;
+
+                    if (img != NULL) {
+                        break;
+                    } else {
+                        continue;
+                    }
                 }
             }
             av_packet_unref(pPacket);
