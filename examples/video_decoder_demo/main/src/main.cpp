@@ -64,14 +64,16 @@ int _main(int argc, char* argv[])
             }
             if (ctx->media_type() == video::MEDIA_TYPE_VIDEO) {
                 image::Image *img = ctx->image();
-                disp.show(*img);
+                if (img) {
+                    disp.show(*img);
+                    delete img;
+                }
 
                 while (time::ticks_us() - last_us < ctx->duration_us()) {
                     time::sleep_ms(1);
                 }
                 last_us = time::ticks_us();
 
-                delete img;
                 delete ctx;
             }
             log::info("loop time:%.2d ms", (time::ticks_ms() - loop_ms));

@@ -735,6 +735,179 @@ namespace maix::video
     //     return AV_SAMPLE_FMT_NONE;
     // }
 
+    // static int _found_first_pts(const char* filename, enum AVMediaType media_type) {
+    //     AVFormatContext* fmt_ctx = nullptr;
+    //     AVCodecContext* codec_ctx = nullptr;
+    //     AVCodec* codec = nullptr;
+    //     AVPacket* pkt = nullptr;
+    //     AVFrame* frame = nullptr;
+    //     int stream_index = -1;
+    //     int first_pts = 10000000;
+
+    //     if (avformat_open_input(&fmt_ctx, filename, nullptr, nullptr) < 0) {
+    //         std::cerr << "Could not open input file\n";
+    //         return first_pts;
+    //     }
+
+    //     if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
+    //         std::cerr << "Could not find stream info\n";
+    //         avformat_close_input(&fmt_ctx);
+    //         return first_pts;
+    //     }
+
+    //     // 查找流
+    //     for (unsigned int i = 0; i < fmt_ctx->nb_streams; i++) {
+    //         if (fmt_ctx->streams[i]->codecpar->codec_type == media_type) {
+    //             stream_index = i;
+    //             break;
+    //         }
+    //     }
+
+    //     if (stream_index == -1) {
+    //         std::cerr << "No video stream found\n";
+    //         avformat_close_input(&fmt_ctx);
+    //         return first_pts;
+    //     }
+
+    //     // 找解码器
+    //     codec = (AVCodec*)avcodec_find_decoder(fmt_ctx->streams[stream_index]->codecpar->codec_id);
+    //     if (!codec) {
+    //         std::cerr << "Codec not found\n";
+    //         avformat_close_input(&fmt_ctx);
+    //         return first_pts;
+    //     }
+
+    //     codec_ctx = avcodec_alloc_context3(codec);
+    //     avcodec_parameters_to_context(codec_ctx, fmt_ctx->streams[stream_index]->codecpar);
+
+    //     if (avcodec_open2(codec_ctx, codec, nullptr) < 0) {
+    //         std::cerr << "Could not open codec\n";
+    //         avcodec_free_context(&codec_ctx);
+    //         avformat_close_input(&fmt_ctx);
+    //         return first_pts;
+    //     }
+
+    //     pkt = av_packet_alloc();
+    //     frame = av_frame_alloc();
+
+    //     // 读取视频帧
+    //     int found_count = 0;
+    //     while (av_read_frame(fmt_ctx, pkt) >= 0) {
+    //         if (pkt->stream_index == stream_index) {
+    //             log::info("first pts: %d dst_pts: %d", first_pts, pkt->pts);
+    //             first_pts = pkt->pts > first_pts ? first_pts : pkt->pts;
+    //             found_count ++;
+    //             if (found_count > 8) {
+    //                 break;
+    //             }
+    //         }
+    //         av_packet_unref(pkt);
+    //     }
+
+    //     // 清理
+    //     av_frame_free(&frame);
+    //     av_packet_free(&pkt);
+    //     avcodec_free_context(&codec_ctx);
+    //     avformat_close_input(&fmt_ctx);
+
+    //     return first_pts;
+    // }
+
+    // static bool has_b_frame(const char* filename)
+    // {
+    //     AVFormatContext* fmt_ctx = nullptr;
+    //     AVCodecContext* codec_ctx = nullptr;
+    //     AVCodec* codec = nullptr;
+    //     AVPacket* pkt = nullptr;
+    //     AVFrame* frame = nullptr;
+    //     int video_stream_index = -1;
+    //     bool found_b_frame = false;
+
+    //     if (avformat_open_input(&fmt_ctx, filename, nullptr, nullptr) < 0) {
+    //         std::cerr << "Could not open input file\n";
+    //         return false;
+    //     }
+
+    //     if (avformat_find_stream_info(fmt_ctx, nullptr) < 0) {
+    //         std::cerr << "Could not find stream info\n";
+    //         avformat_close_input(&fmt_ctx);
+    //         return false;
+    //     }
+
+    //     // 查找视频流
+    //     for (unsigned int i = 0; i < fmt_ctx->nb_streams; i++) {
+    //         if (fmt_ctx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+    //             video_stream_index = i;
+    //             break;
+    //         }
+    //     }
+
+    //     if (video_stream_index == -1) {
+    //         std::cerr << "No video stream found\n";
+    //         avformat_close_input(&fmt_ctx);
+    //         return false;
+    //     }
+
+    //     // 找解码器
+    //     codec = (AVCodec*)avcodec_find_decoder(fmt_ctx->streams[video_stream_index]->codecpar->codec_id);
+    //     if (!codec) {
+    //         std::cerr << "Codec not found\n";
+    //         avformat_close_input(&fmt_ctx);
+    //         return false;
+    //     }
+
+    //     codec_ctx = avcodec_alloc_context3(codec);
+    //     avcodec_parameters_to_context(codec_ctx, fmt_ctx->streams[video_stream_index]->codecpar);
+
+    //     if (avcodec_open2(codec_ctx, codec, nullptr) < 0) {
+    //         std::cerr << "Could not open codec\n";
+    //         avcodec_free_context(&codec_ctx);
+    //         avformat_close_input(&fmt_ctx);
+    //         return false;
+    //     }
+
+    //     pkt = av_packet_alloc();
+    //     frame = av_frame_alloc();
+
+    //     // 读取视频帧
+    //     int found_p_count = 0;
+    //     while (av_read_frame(fmt_ctx, pkt) >= 0) {
+    //         if (pkt->stream_index == video_stream_index) {
+    //             if (avcodec_send_packet(codec_ctx, pkt) == 0) {
+    //                 while (avcodec_receive_frame(codec_ctx, frame) == 0) {
+    //                     if (frame->pict_type == AV_PICTURE_TYPE_B) {
+    //                         found_b_frame = true;
+    //                         break;
+    //                     } else if (frame->pict_type == AV_PICTURE_TYPE_P) {
+    //                         found_p_count++;
+    //                         if (found_p_count >= 2) {
+    //                             found_b_frame = false;
+    //                             break;
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //         av_packet_unref(pkt);
+
+    //         if (found_b_frame)
+    //             break;
+
+    //         if (found_p_count > 2) {
+    //             found_b_frame = false;
+    //             break;
+    //         }
+    //     }
+
+    //     // 清理
+    //     av_frame_free(&frame);
+    //     av_packet_free(&pkt);
+    //     avcodec_free_context(&codec_ctx);
+    //     avformat_close_input(&fmt_ctx);
+
+    //     return found_b_frame;
+    // }
+
     Decoder::Decoder(std::string path, image::Format format) {
         av_log_set_callback(custom_log_callback);
         err::check_bool_raise(format == image::Format::FMT_YVU420SP || format == image::Format::FMT_GRAYSCALE, "Decoder only support FMT_GRAYSCALE or FMT_YVU420SP format!");
@@ -905,6 +1078,9 @@ namespace maix::video
         param->vdec_type = vdec_type;
         param->ctx_list = new std::list<video::Context *>();
         param->next_pts = 0;
+        // if (path.size()) {
+        //     param->next_pts = _found_first_pts(path.c_str(), AVMEDIA_TYPE_VIDEO);
+        // }
 
         // audio
         if (_has_audio) {
@@ -951,6 +1127,16 @@ namespace maix::video
             param->ctx_list = NULL;
 
             if (param->vdec) {
+                AX_VDEC_GRP_STATUS_T stGrpStatus;
+                memset(&stGrpStatus, 0, sizeof(AX_VDEC_GRP_STATUS_T));
+                if (AX_VDEC_QueryStatus(param->vdec->get_channel(), &stGrpStatus) != AX_SUCCESS) {
+                    log::error("AX_VDEC_ResetGrp FAILED!");
+                }
+
+                for (AX_U32 i = 0; i < stGrpStatus.u32LeftPics; i++) {
+                    auto frame = param->vdec->pop(1000);
+                    delete frame;
+                }
                 delete param->vdec;
             }
 
@@ -1150,7 +1336,19 @@ _retry:
                             log::error("vdec push failed!");
                             goto __vdec_exit;
                         }
-                        out_frame = param->vdec->pop(1000);
+
+                        AX_VDEC_GRP_STATUS_T stGrpStatus;
+                        memset(&stGrpStatus, 0, sizeof(AX_VDEC_GRP_STATUS_T));
+                        if (AX_VDEC_QueryStatus(param->vdec->get_channel(), &stGrpStatus) != AX_SUCCESS) {
+                            log::error("AX_VDEC_ResetGrp FAILED!");
+                        }
+
+                        if (stGrpStatus.u32LeftPics == 0) {
+                            time::sleep_ms(5);
+                            goto __vdec_exit;
+                        }
+
+                        out_frame = param->vdec->pop(5);
                         if (!out_frame) {
                             log::error("vdec pop failed!");
                             goto __vdec_exit;
@@ -1158,9 +1356,21 @@ _retry:
                         img = new image::Image(out_frame->w, out_frame->h, maixcam2::get_maix_fmt_from_ax(out_frame->fmt), (uint8_t *)out_frame->data, out_frame->len, true);
                         media_type = MEDIA_TYPE_VIDEO;
                     } else {
-                        out_frame = param->vdec->pop(1000);
-                        if (out_frame) {
-                            img = new image::Image(out_frame->w, out_frame->h, maixcam2::get_maix_fmt_from_ax(out_frame->fmt), (uint8_t *)out_frame->data, out_frame->len, true);
+                        AX_VDEC_GRP_STATUS_T stGrpStatus;
+                        memset(&stGrpStatus, 0, sizeof(AX_VDEC_GRP_STATUS_T));
+                        if (AX_VDEC_QueryStatus(param->vdec->get_channel(), &stGrpStatus) != AX_SUCCESS) {
+                            log::error("AX_VDEC_ResetGrp FAILED!");
+                        }
+
+                        if (stGrpStatus.u32LeftPics == 0) {
+                            time::sleep_ms(5);
+                            goto __vdec_exit;
+                            out_frame = nullptr;
+                        } else {
+                            out_frame = param->vdec->pop(5);
+                            if (out_frame) {
+                                img = new image::Image(out_frame->w, out_frame->h, maixcam2::get_maix_fmt_from_ax(out_frame->fmt), (uint8_t *)out_frame->data, out_frame->len, true);
+                            }
                         }
 
                         if (err::ERR_NONE != param->vdec->push(src_frame, 1000)) {
@@ -1187,32 +1397,6 @@ __vdec_exit:
                 }
             }
             av_packet_unref(pPacket);
-        }
-
-        if (param->video_format != VIDEO_FORMAT_H264) {
-            if (context && context->media_type() == video::MEDIA_TYPE_VIDEO) {
-                video::Context *ctx = context;
-                std::list<video::Context *> *ctx_list = param->ctx_list;
-                video::Context *play_ctx = NULL;
-                if (curr_pts == ctx->pts()) {
-                    play_ctx = ctx;
-                } else {
-                    ctx_list->push_back(ctx);
-                    std::list<video::Context *>::iterator iter;
-                    for(iter=ctx_list->begin();iter!=ctx_list->end();iter++) {
-                        video::Context *ctx = *iter;
-                        if (curr_pts == ctx->pts()) {
-                            play_ctx = ctx;
-                            iter = ctx_list->erase(iter);
-                            break;
-                        }
-                    }
-                }
-                context = play_ctx;
-                if (context == NULL) {
-                    goto _retry;
-                }
-            }
         }
 
         if (context) {
@@ -1334,7 +1518,19 @@ Bytes data(output, converted_samples * audio_codec_ctx->channels * av_get_bytes_
                         log::error("vdec push failed!");
                         goto __vdec_exit;
                     }
-                    out_frame = param->vdec->pop(1000);
+
+                    AX_VDEC_GRP_STATUS_T stGrpStatus;
+                    memset(&stGrpStatus, 0, sizeof(AX_VDEC_GRP_STATUS_T));
+                    if (AX_VDEC_QueryStatus(param->vdec->get_channel(), &stGrpStatus) != AX_SUCCESS) {
+                        log::error("AX_VDEC_ResetGrp FAILED!");
+                    }
+
+                    if (stGrpStatus.u32LeftPics == 0) {
+                        time::sleep_ms(5);
+                        goto __vdec_exit;
+                    }
+
+                    out_frame = param->vdec->pop(5);
                     if (!out_frame) {
                         log::error("vdec pop failed!");
                         goto __vdec_exit;
@@ -1342,9 +1538,21 @@ Bytes data(output, converted_samples * audio_codec_ctx->channels * av_get_bytes_
                     img = new image::Image(out_frame->w, out_frame->h, maixcam2::get_maix_fmt_from_ax(out_frame->fmt), (uint8_t *)out_frame->data, out_frame->len, true);
                     media_type = MEDIA_TYPE_VIDEO;
                 } else {
-                    out_frame = param->vdec->pop(1000);
-                    if (out_frame) {
-                        img = new image::Image(out_frame->w, out_frame->h, maixcam2::get_maix_fmt_from_ax(out_frame->fmt), (uint8_t *)out_frame->data, out_frame->len, true);
+                    AX_VDEC_GRP_STATUS_T stGrpStatus;
+                    memset(&stGrpStatus, 0, sizeof(AX_VDEC_GRP_STATUS_T));
+                    if (AX_VDEC_QueryStatus(param->vdec->get_channel(), &stGrpStatus) != AX_SUCCESS) {
+                        log::error("AX_VDEC_ResetGrp FAILED!");
+                    }
+
+                    if (stGrpStatus.u32LeftPics == 0) {
+                        time::sleep_ms(5);
+                        goto __vdec_exit;
+                        out_frame = nullptr;
+                    } else {
+                        out_frame = param->vdec->pop(5);
+                        if (out_frame) {
+                            img = new image::Image(out_frame->w, out_frame->h, maixcam2::get_maix_fmt_from_ax(out_frame->fmt), (uint8_t *)out_frame->data, out_frame->len, true);
+                        }
                     }
 
                     if (err::ERR_NONE != param->vdec->push(src_frame, 1000)) {
