@@ -237,12 +237,13 @@ namespace maix::display
             err::check_raise(in.get_video_frame(&stFrameSrc), "get video frame failed");
             err::check_raise(out.get_video_frame(&stFrameDst), "get video frame failed");
 
+            // log::info(" ========== SRC ++++++++");
+            // __print_video_frame(&stFrameSrc);
+
             s32Ret = AX_IVPS_CropResizeTdp(&stFrameSrc, &stFrameDst, ptAttr);
             if (s32Ret != 0) {
                 return s32Ret;
             }
-            // log::info(" ========== SRC ++++++++");
-            // __print_video_frame(&stFrameSrc);
             // log::info(" ========== DST ++++++++");
             // __print_video_frame(&stFrameDst);static int count = 0;
             // log::info("crop resize count:%d", count ++);
@@ -255,24 +256,28 @@ namespace maix::display
             return 0;
         }
 
-        static AX_S32 __ax_ivps_crop_resize_vpp(maixcam2::Frame &in, maixcam2::Frame &out, const AX_IVPS_CROP_RESIZE_ATTR_T *ptAttr) {
+        static AX_S32 __ax_ivps_crop_resize_vpp(maixcam2::Frame &in, maixcam2::Frame &out, const AX_IVPS_CROP_RESIZE_ATTR_T *ptAttr, bool update_frame = true) {
             AX_S32 s32Ret = 0;
-            AX_U64 dst_phy = 0;
-            AX_U8* dst_vir = NULL;
             AX_VIDEO_FRAME_T stFrameDst = {0}, stFrameSrc = {0};
             err::check_raise(in.get_video_frame(&stFrameSrc), "get video frame failed");
             err::check_raise(out.get_video_frame(&stFrameDst), "get video frame failed");
+
             // log::info(" ========== SRC ++++++++");
             // __print_video_frame(&stFrameSrc);
-            // log::info(" ========== DST ++++++++");
-            // __print_video_frame(&stFrameDst);static int count = 0;
-            // log::info("crop resize count:%d", count ++);
+
             s32Ret = AX_IVPS_CropResizeVpp(&stFrameSrc, &stFrameDst, ptAttr);
             if (s32Ret != 0) {
                 return s32Ret;
             }
+            // log::info(" ========== DST ++++++++");
+            // __print_video_frame(&stFrameDst);static int count = 0;
+            // log::info("crop resize count:%d", count ++);
+            AX_SYS_MinvalidateCache(stFrameDst.u64PhyAddr[0], (AX_U8* )stFrameDst.u64VirAddr[0], stFrameDst.u32FrameSize);
 
-            AX_SYS_MinvalidateCache(dst_phy, dst_vir, stFrameDst.u32FrameSize);
+            if (update_frame) {
+                in.set_video_frame(&stFrameSrc);
+                out.set_video_frame(&stFrameDst);
+            }
             return 0;
         }
 
@@ -672,18 +677,6 @@ namespace maix::display
 
                 auto src_img = &img;
                 auto need_delete_src_img = false;
-                // if (fit != image::Fit::FIT_FILL) {
-                //     try {
-                //         if ((img.width() > 460 && img.width() < 630) && (img.height() > 460 && img.height() < 630)) {
-                //             auto new_src_img = src_img->resize(src_img->width(), src_img->height(), fit);
-                //             src_img = new_src_img;
-                //             need_delete_src_img = true;
-                //         }
-                //     } catch (const std::exception &e) {
-                //         log::warn("Failed to resize image: %s", e.what());
-                //     }
-                // }
-
                 auto src_pool_id = _src_pool.pool_id();
 
                 maixcam2::Frame *frame = nullptr;
@@ -700,8 +693,7 @@ namespace maix::display
                 }
 
                 switch (fit) {
-                case image::FIT_CONTAIN: // fall through
-                case image::FIT_COVER:
+                case image::FIT_CONTAIN:
                 {
                     maixcam2::Frame *new_frame = nullptr;
                     while (new_frame == nullptr && !app::need_exit()) {
@@ -733,41 +725,17 @@ namespace maix::display
                     memset(&crop_resize_attr, 0, sizeof(AX_IVPS_CROP_RESIZE_ATTR_T));
                     crop_resize_attr.tAspectRatio.nBgColor = (AX_U32)0;
                     crop_resize_attr.eSclType = AX_IVPS_SCL_TYPE_AUTO;
-                    switch (fit) {
-                    case image::FIT_CONTAIN:
-                    {
-                        crop_resize_attr.eSclInput = AX_IVPS_SCL_INPUT_SHARE;
-                        crop_resize_attr.tAspectRatio.eMode = AX_IVPS_ASPECT_RATIO_AUTO;
-                        crop_resize_attr.tAspectRatio.eAligns[0] = AX_IVPS_ASPECT_RATIO_VERTICAL_CENTER;
-                        crop_resize_attr.tAspectRatio.eAligns[1] = AX_IVPS_ASPECT_RATIO_VERTICAL_CENTER;
-                        crop_resize_attr.tAspectRatio.nBgColor = (AX_U32)0;
-                        AX_S32 ret = __ax_ivps_crop_resize_tdp(*frame, *new_frame, &crop_resize_attr, false);
-                        if (ret != 0) {
-                            log::info("Failed to fit image, ret:%#x", ret);
-                            delete frame;
-                            delete new_frame;
-                            return err::ERR_RUNTIME;
-                        }
-                        break;
-                    }
-                    case image::FIT_COVER:
-                    {
-                        crop_resize_attr.eSclInput = AX_IVPS_SCL_INPUT_MONOPOLY;
-                        crop_resize_attr.tAspectRatio.eMode = AX_IVPS_ASPECT_RATIO_MANUAL;
-                        crop_resize_attr.tAspectRatio.tRect.nX = 0;
-                        crop_resize_attr.tAspectRatio.tRect.nY = 0;
-                        crop_resize_attr.tAspectRatio.tRect.nW = frame->w;
-                        crop_resize_attr.tAspectRatio.tRect.nH = frame->h;
-                        AX_S32 ret = __ax_ivps_crop_resize_tdp(*frame, *new_frame, &crop_resize_attr);
-                        if (ret != 0) {
-                            log::info("Failed to fit image, ret:%#x", ret);
-                            delete frame;
-                            delete new_frame;
-                            return err::ERR_RUNTIME;
-                        }
-                        break;
-                    }
-                    default:break;
+                    crop_resize_attr.eSclInput = AX_IVPS_SCL_INPUT_SHARE;
+                    crop_resize_attr.tAspectRatio.eMode = AX_IVPS_ASPECT_RATIO_AUTO;
+                    crop_resize_attr.tAspectRatio.eAligns[0] = AX_IVPS_ASPECT_RATIO_VERTICAL_CENTER;
+                    crop_resize_attr.tAspectRatio.eAligns[1] = AX_IVPS_ASPECT_RATIO_VERTICAL_CENTER;
+                    crop_resize_attr.tAspectRatio.nBgColor = (AX_U32)0;
+                    AX_S32 ret = __ax_ivps_crop_resize_tdp(*frame, *new_frame, &crop_resize_attr, false);
+                    if (ret != 0) {
+                        log::info("Failed to fit image, ret:%#x", ret);
+                        delete frame;
+                        delete new_frame;
+                        return err::ERR_RUNTIME;
                     }
 
                     // fit success, use new frame
@@ -775,11 +743,54 @@ namespace maix::display
                     frame = new_frame;
                     break;
                 }
+                case image::FIT_COVER:
+                {
+                    float scale_x = (float)_width / frame->w;
+                    float scale_y = (float)_height / frame->h;
+                    float scale = (float)_width / _height;
+                    int crop_x = 0, crop_y = 0, crop_w = frame->w, crop_h = frame->h;
+                    // log::info("_width:%d _height:%d", _width, _height);
+                    // log::info("scale x %f, y %f, scale %f", scale_x, scale_y, scale);
+                    if (frame->w <= _width && frame->h <= _height) {
+                        // 图像在显示屏内部, 使用比例小的边
+                        if (scale_x > scale_y) {        // x边小
+                            crop_w = frame->w;
+                            crop_h = crop_w / scale;    // _w / _h = crop_w / crop_h; crop_h = crop_w * _h / _w;
+                            crop_x = 0;
+                            crop_y = (frame->h - crop_h) / 2;
+                        } else {                        // y边小
+                            crop_h = frame->h;
+                            crop_w = crop_h * scale;    // _w / _h = crop_w / crop_h; crop_w = crop_h * _w / _h;
+                            crop_x = (frame->w - crop_w) / 2;
+                            crop_y = 0;
+                        }
+                    } else {
+                        // 图像在显示屏外部, 使用比例小的边
+                        if (scale_x > scale_y) {        // y边小
+                            crop_w = frame->w;
+                            crop_h = crop_w / scale;    // _w / _h = crop_w / crop_h; crop_w = crop_h * _w / _h;
+                            crop_x = 0;
+                            crop_y = (frame->h - crop_h) / 2;
+                        } else {                        // x边小
+                            crop_h = frame->h;
+                            crop_w = crop_h * scale;    // _w / _h = crop_w / crop_h; crop_h = crop_w * _h / _w;
+                            crop_x = (frame->w - crop_w) / 2;
+                            crop_y = 0;
+                        }
+                    }
+                    AX_VIDEO_FRAME_T tmp_frame;
+                    frame->get_video_frame(&tmp_frame);
+                    tmp_frame.s16CropX = crop_x;
+                    tmp_frame.s16CropX = crop_y;
+                    tmp_frame.s16CropWidth = crop_w;
+                    tmp_frame.s16CropHeight = crop_h;
+                    frame->set_video_frame(&tmp_frame);
+                    break;
+                }
                 default:
                     // do nothing, include image::FIT_FILL
                     break;
                 }
-
 
                 if (!frame) {
                     log::error("Unable to create a frame for display");
@@ -897,13 +908,115 @@ namespace maix::display
             return err::ERR_NONE;
         }
 
-        err::Err push(pipeline::Frame *frame, image::Fit fit) {
-            if (!frame) return err::ERR_ARGS;
-            if (0 != __vo->push(this->_layer, this->_ch, (maixcam2::Frame *)frame->frame())) {
-                log::error("mmf_vo_frame_push failed\n");
-                delete frame;
-                frame = nullptr;
+        err::Err push(pipeline::Frame *pipe_frame, image::Fit fit) {
+            if (!pipe_frame) return err::ERR_ARGS;
+            auto frame = (maixcam2::Frame *)pipe_frame->frame();
+            maixcam2::Frame *new_frame = nullptr;
+            switch (fit) {
+            case image::FIT_CONTAIN:
+            {
+                while (new_frame == nullptr && !app::need_exit()) {
+                    try {
+                        auto dst_pool_id = _dst_pool.pool_id();
+                        auto new_frame_format = pipe_frame->format();
+                        new_frame = new maixcam2::Frame(dst_pool_id, _width, _height, nullptr, 0, maixcam2::get_ax_fmt_from_maix(new_frame_format));
+                        if (new_frame_format >= image::FMT_YVU420SP && new_frame_format <= image::FMT_YUV420P) {
+                            memset(new_frame->data, 0, _width * _height);
+                            memset((uint8_t *)(new_frame->data) + _width * _height, 128, _width * _height / 2);
+                        } else {
+                            memset(new_frame->data, 0, new_frame->len);
+                        }
+                    } catch (...) {
+                        time::sleep_ms(5);
+                    }
+                }
+
+                if (!new_frame) {
+                    return err::ERR_RUNTIME;
+                }
+
+
+                AX_IVPS_CROP_RESIZE_ATTR_T crop_resize_attr;
+                memset(&crop_resize_attr, 0, sizeof(AX_IVPS_CROP_RESIZE_ATTR_T));
+                crop_resize_attr.tAspectRatio.nBgColor = (AX_U32)0;
+                crop_resize_attr.eSclType = AX_IVPS_SCL_TYPE_AUTO;
+                crop_resize_attr.eSclInput = AX_IVPS_SCL_INPUT_SHARE;
+                crop_resize_attr.tAspectRatio.eMode = AX_IVPS_ASPECT_RATIO_AUTO;
+                crop_resize_attr.tAspectRatio.eAligns[0] = AX_IVPS_ASPECT_RATIO_VERTICAL_CENTER;
+                crop_resize_attr.tAspectRatio.eAligns[1] = AX_IVPS_ASPECT_RATIO_VERTICAL_CENTER;
+                crop_resize_attr.tAspectRatio.nBgColor = (AX_U32)0;
+                AX_S32 ret = __ax_ivps_crop_resize_tdp(*frame, *new_frame, &crop_resize_attr, false);
+                if (ret != 0) {
+                    log::info("Failed to fit image, ret:%#x", ret);
+                    delete new_frame;
+                    return err::ERR_RUNTIME;
+                }
+
+                // fit success, use new frame
+                frame = new_frame;
+                break;
+            }
+            case image::FIT_COVER:
+            {
+                float scale_x = (float)_width / frame->w;
+                float scale_y = (float)_height / frame->h;
+                float scale = (float)_width / _height;
+                int crop_x = 0, crop_y = 0, crop_w = frame->w, crop_h = frame->h;
+                // log::info("_width:%d _height:%d", _width, _height);
+                // log::info("scale x %f, y %f, scale %f", scale_x, scale_y, scale);
+                if (frame->w <= _width && frame->h <= _height) {
+                    // 图像在显示屏内部, 使用比例小的边
+                    if (scale_x > scale_y) {        // x边小
+                        crop_w = frame->w;
+                        crop_h = crop_w / scale;    // _w / _h = crop_w / crop_h; crop_h = crop_w * _h / _w;
+                        crop_x = 0;
+                        crop_y = (frame->h - crop_h) / 2;
+                    } else {                        // y边小
+                        crop_h = frame->h;
+                        crop_w = crop_h * scale;    // _w / _h = crop_w / crop_h; crop_w = crop_h * _w / _h;
+                        crop_x = (frame->w - crop_w) / 2;
+                        crop_y = 0;
+                    }
+                } else {
+                    // 图像在显示屏外部, 使用比例小的边
+                    if (scale_x > scale_y) {        // y边小
+                        crop_w = frame->w;
+                        crop_h = crop_w / scale;    // _w / _h = crop_w / crop_h; crop_w = crop_h * _w / _h;
+                        crop_x = 0;
+                        crop_y = (frame->h - crop_h) / 2;
+                    } else {                        // x边小
+                        crop_h = frame->h;
+                        crop_w = crop_h * scale;    // _w / _h = crop_w / crop_h; crop_h = crop_w * _h / _w;
+                        crop_x = (frame->w - crop_w) / 2;
+                        crop_y = 0;
+                    }
+                }
+                AX_VIDEO_FRAME_T tmp_frame;
+                frame->get_video_frame(&tmp_frame);
+                tmp_frame.s16CropX = crop_x;
+                tmp_frame.s16CropX = crop_y;
+                tmp_frame.s16CropWidth = crop_w;
+                tmp_frame.s16CropHeight = crop_h;
+                frame->set_video_frame(&tmp_frame);
+                break;
+            }
+            default:
+                // do nothing, include image::FIT_FILL
+                break;
+            }
+
+            if (0 != __vo->push(this->_layer, this->_ch, frame)) {
+                log::error("vo_frame_push failed\n");
+                if (new_frame) {
+                    delete new_frame;
+                    new_frame = nullptr;
+                }
                 return err::ERR_RUNTIME;
+            }
+
+            if (new_frame) {
+                delete new_frame;
+                new_frame = nullptr;
             }
             return err::ERR_NONE;
         }
