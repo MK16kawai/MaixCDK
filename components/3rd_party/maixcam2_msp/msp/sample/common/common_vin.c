@@ -164,20 +164,7 @@ AX_S32 COMMON_VIN_StartMipi(AX_U8 nRxDev, AX_INPUT_MODE_E eInputMode, AX_MIPI_RX
     tMipiDev.eInputMode = eInputMode;
     tMipiDev.eBtClkMode = AX_BT_CLK_MODE_SDR;
     memcpy(&tMipiDev.tMipiAttr, ptMipiAttr, sizeof(AX_MIPI_RX_ATTR_T));
-
-    if ((tMipiDev.eInputMode == AX_INPUT_MODE_MIPI) || (tMipiDev.eInputMode == AX_INPUT_MODE_LVDS)) {
-        if (tMipiDev.tMipiAttr.eLaneNum == AX_MIPI_DATA_LANE_4) {
-            AX_MIPI_RX_SetLaneCombo(AX_LANE_COMBO_MODE_0);
-        } else {
-            AX_MIPI_RX_SetLaneCombo(AX_LANE_COMBO_MODE_1);
-        }
-    } else {
-        if (((gBT656DevAttr.tBtIntfAttr.eBtTdmMode != AX_VIN_BT_NORMAL_MODE) && (eInputMode == AX_INPUT_MODE_BT656)) ||
-            ((gBT1120DevAttr.tBtIntfAttr.eBtTdmMode != AX_VIN_BT_NORMAL_MODE) && (eInputMode == AX_INPUT_MODE_BT1120))){
-            tMipiDev.eBtClkMode = AX_BT_CLK_MODE_DDR;
-        }
-        AX_MIPI_RX_SetLaneCombo(eLaneComboMode);
-    }
+    AX_MIPI_RX_SetLaneCombo(AX_LANE_COMBO_MODE_0);
 
     nRet = AX_MIPI_RX_SetAttr(nRxDev, &tMipiDev);
     if (0 != nRet) {

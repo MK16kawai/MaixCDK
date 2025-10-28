@@ -511,6 +511,8 @@ namespace maix::middleware::maixcam2 {
         SAMPLE_VIN_SINGLE_SC450AI = 2,
         SAMPLE_VIN_SINGLE_SC850SL = 3,
         SAMPLE_VIN_SINGLE_OS04D10 = 4,
+        SAMPLE_VIN_SINGLE_SC850SL_1080P60 = 5,
+        SAMPLE_VIN_SINGLE_OS04D10_720P60 = 6,
         SAMPLE_VIN_BUTT
     } SAMPLE_VIN_CASE_E;
 
@@ -577,6 +579,71 @@ namespace maix::middleware::maixcam2 {
         {2560, 1440, 2560, AX_FORMAT_BAYER_RAW_10BPP_PACKED, 16, AX_COMPRESS_MODE_NONE, 4},      /* vin raw16 use */
     };
 
+    static AX_MIPI_RX_ATTR_T gOs04d10_720P60_MipiAttr = {
+        .ePhyMode = AX_MIPI_PHY_TYPE_DPHY,
+        .eLaneNum = AX_MIPI_DATA_LANE_2,
+        .nDataRate = 720,
+        .nDataLaneMap = {2, 1, -1, -1},
+        .nClkLane = {0, 5},
+    };
+
+    static AX_SNS_ATTR_T gOs04d10_720P60_SnsAttr = {
+        .nWidth = 1280,
+        .nHeight = 720,
+        .fFrameRate = 60,
+        .eSnsMode = AX_SNS_LINEAR_MODE,
+        .eRawType = AX_RT_RAW10,
+        .eBayerPattern = AX_BP_BGGR,
+        .bTestPatternEnable = AX_FALSE,
+        // .nSettingIndex = 12,
+    };
+
+    static AX_VIN_DEV_ATTR_T gOs04d10_720P60_DevAttr = {
+        .eDevMode = AX_VIN_DEV_ONLINE,
+        .bImgDataEnable = AX_TRUE,
+        .bNonImgDataEnable = AX_FALSE,
+        .eSnsIntfType = AX_SNS_INTF_TYPE_MIPI_RAW,
+
+        /* When users transfer special data, they need to configure VC&DT for szImgVc/szImgDt/szInfoVc/szInfoDt */
+        //.tMipiIntfAttr.szImgVc[0] = 0,
+        //.tMipiIntfAttr.szImgDt[0] = MIPI_CSI_DT_RAW10,
+        //.tMipiIntfAttr.szImgVc[1] = 1,
+        //.tMipiIntfAttr.szImgDt[1] = MIPI_CSI_DT_RAW10,
+
+        .eSnsMode = AX_SNS_LINEAR_MODE,
+        .eBayerPattern = AX_BP_BGGR,
+        .ePixelFmt = AX_FORMAT_BAYER_RAW_10BPP_PACKED,
+        .tDevImgRgn = {{0, 0, 1280, 720},
+                        {0, 0, 1280, 720},
+                        {0, 0, 1280, 720},
+                        {0, 0, 1280, 720},},
+        .eSnsOutputMode = AX_SNS_NORMAL,
+        .tFrameRateCtrl= {AX_INVALID_FRMRATE, AX_INVALID_FRMRATE},
+        .tCompressInfo = {AX_COMPRESS_MODE_NONE, 0},
+    };
+
+    static AX_VIN_PIPE_ATTR_T gOs04d10_720P60_PipeAttr = {
+        .ePipeWorkMode = AX_VIN_PIPE_NORMAL_MODE1,
+        .tPipeImgRgn = {0, 0, 1280, 720},
+        .nWidthStride = 1280,
+        .eBayerPattern = AX_BP_BGGR,
+        .ePixelFmt = AX_FORMAT_BAYER_RAW_10BPP_PACKED,
+        .eSnsMode = AX_SNS_LINEAR_MODE,
+        .tCompressInfo = {AX_COMPRESS_MODE_LOSSY, 0},
+        .tNrAttr = {{AX_FALSE, {AX_COMPRESS_MODE_LOSSLESS, 0}}, {AX_FALSE, {AX_COMPRESS_MODE_NONE, 0}}},
+        .tFrameRateCtrl = {AX_INVALID_FRMRATE, AX_INVALID_FRMRATE},
+    };
+
+    static AX_VIN_CHN_ATTR_T gOs04d10_720P60_Chn0Attr = {
+        .nWidth = 1280,
+        .nHeight = 720,
+        .nWidthStride = 1280,
+        .eImgFormat = AX_FORMAT_YUV420_SEMIPLANAR,
+        .nDepth = 1,
+        .tCompressInfo = {AX_COMPRESS_MODE_LOSSY, 4},
+        .tFrameRateCtrl = {AX_INVALID_FRMRATE, AX_INVALID_FRMRATE},
+    };
+
     // SC850SL
     static COMMON_SYS_POOL_CFG_T gtSysCommPoolSingleSc850slSdr[] = {
         {3840, 2160, 3840, AX_FORMAT_YUV420_SEMIPLANAR, 4, AX_COMPRESS_MODE_LOSSY, 4},    /* vin nv21/nv21 use */
@@ -586,7 +653,71 @@ namespace maix::middleware::maixcam2 {
     static COMMON_SYS_POOL_CFG_T gtPrivatePoolSingleSc850slSdr[] = {
         {3840, 2160, 3840, AX_FORMAT_BAYER_RAW_10BPP_PACKED, 5, AX_COMPRESS_MODE_NONE, 4},      /* vin raw10 use */
     };
-    // static AX_CAMERA_T gCams[MAX_CAMERAS] = {0};
+
+    static AX_SNS_ATTR_T gSc850sl_1080P60_SnsAttr = {
+        .nWidth = 1920,
+        .nHeight = 1080,
+        .fFrameRate = 60,
+        .eSnsMode = AX_SNS_LINEAR_MODE,
+        .eRawType = AX_RT_RAW10,
+        .eBayerPattern = AX_BP_RGGB,
+        .bTestPatternEnable = AX_FALSE,
+        // .nSettingIndex = 12,
+    };
+
+    static AX_MIPI_RX_ATTR_T gSc850sl_1080P60_MipiAttr = {
+        .ePhyMode = AX_MIPI_PHY_TYPE_DPHY,
+        .eLaneNum = AX_MIPI_DATA_LANE_2,
+        .nDataRate =  1080,
+        .nDataLaneMap = {3, 1, 4, 0},
+        .nClkLane = {2, 5},
+    };
+
+    static AX_VIN_DEV_ATTR_T gSc850sl_1080P60_DevAttr = {
+        .eDevMode = AX_VIN_DEV_ONLINE,
+        .bImgDataEnable = AX_TRUE,
+        .bNonImgDataEnable = AX_FALSE,
+        .eSnsIntfType = AX_SNS_INTF_TYPE_MIPI_RAW,
+
+        /* When users transfer special data, they need to configure VC&DT for szImgVc/szImgDt/szInfoVc/szInfoDt */
+        //.tMipiIntfAttr.szImgVc[0] = 0,
+        //.tMipiIntfAttr.szImgDt[0] = MIPI_CSI_DT_RAW10,
+        //.tMipiIntfAttr.szImgVc[1] = 1,
+        //.tMipiIntfAttr.szImgDt[1] = MIPI_CSI_DT_RAW10,
+
+        .eSnsMode = AX_SNS_LINEAR_MODE,
+        .eBayerPattern = AX_BP_RGGB,
+        .ePixelFmt = AX_FORMAT_BAYER_RAW_10BPP_PACKED,
+        .tDevImgRgn = {{0, 0, 1920, 1080},
+                    {0, 0, 1920, 1080},
+                    {0, 0, 1920, 1080},
+                    {0, 0, 1920, 1080},},
+        .eSnsOutputMode = AX_SNS_NORMAL,
+        .tFrameRateCtrl= {AX_INVALID_FRMRATE, AX_INVALID_FRMRATE},
+        .tCompressInfo = {AX_COMPRESS_MODE_NONE, 0},
+    };
+
+    static AX_VIN_PIPE_ATTR_T gSc850sl_1080P60_PipeAttr = {
+        .ePipeWorkMode = AX_VIN_PIPE_NORMAL_MODE1,
+        .tPipeImgRgn = {.nStartX = 0, .nStartY = 0, .nWidth = 1920, .nHeight = 1080},
+        .nWidthStride = 1920,
+        .eBayerPattern = AX_BP_RGGB,
+        .ePixelFmt = AX_FORMAT_BAYER_RAW_10BPP_PACKED,
+        .eSnsMode = AX_SNS_LINEAR_MODE,
+        .tCompressInfo = {AX_COMPRESS_MODE_LOSSY, 0},
+        .tNrAttr = {{AX_FALSE, {AX_COMPRESS_MODE_LOSSLESS, 0}}, {AX_FALSE, {AX_COMPRESS_MODE_NONE, 0}}},
+        .tFrameRateCtrl = {AX_INVALID_FRMRATE, AX_INVALID_FRMRATE},
+    };
+
+    static AX_VIN_CHN_ATTR_T gSc850sl_1080P60_Chn0Attr = {
+        .nWidth = 1920,
+        .nHeight = 1080,
+        .nWidthStride = 1920,
+        .eImgFormat = AX_FORMAT_YUV420_SEMIPLANAR,
+        .nDepth = 1,
+        .tCompressInfo = {AX_COMPRESS_MODE_LOSSY, 4},
+        .tFrameRateCtrl = {AX_INVALID_FRMRATE, AX_INVALID_FRMRATE},
+    };
 
     static AX_VOID __cal_dump_pool(COMMON_SYS_POOL_CFG_T pool[], AX_SNS_HDR_MODE_E eHdrMode, AX_S32 nFrameNum)
     {
@@ -750,6 +881,7 @@ namespace maix::middleware::maixcam2 {
             pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj_User(eSnsType);
             pCam->eBusType = COMMON_ISP_GetSnsBusType(eSnsType);
             pCam->eLoadRawNode = eLoadRawNode;
+            pCam->eLaneComboMode = AX_LANE_COMBO_MODE_0;
             __set_pipe_hdr_mode(&pCam->tDevBindPipe.nHDRSel[0], eHdrMode);
             __set_vin_attr(pCam, eSnsType, eHdrMode, eSysMode, pVinParam->bAiispEnable);
             for (AX_S32 j = 0; j < AX_VIN_MAX_PIPE_NUM; j++) {
@@ -783,6 +915,7 @@ namespace maix::middleware::maixcam2 {
         pCam->tDevBindPipe.nPipeId[0] = pCam->nPipeId;
         pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj_User(eSnsType);
         pCam->eBusType = COMMON_ISP_GetSnsBusType(eSnsType);
+        pCam->eLaneComboMode = AX_LANE_COMBO_MODE_0;
         __set_pipe_hdr_mode(&pCam->tDevBindPipe.nHDRSel[0], eHdrMode);
         __set_vin_attr(pCam, eSnsType, eHdrMode, eSysMode, pVinParam->bAiispEnable);
         for (j = 0; j < pCam->tDevBindPipe.nNum; j++) {
@@ -819,6 +952,7 @@ namespace maix::middleware::maixcam2 {
         pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj_User(eSnsType);
         pCam->eBusType = COMMON_ISP_GetSnsBusType(eSnsType);
         pCam->eInputMode = AX_INPUT_MODE_MIPI;
+        pCam->eLaneComboMode = AX_LANE_COMBO_MODE_0;
         __set_pipe_hdr_mode(&pCam->tDevBindPipe.nHDRSel[0], eHdrMode);
         __set_vin_attr(pCam, eSnsType, eHdrMode, eSysMode, pVinParam->bAiispEnable);
         for (j = 0; j < pCam->tDevBindPipe.nNum; j++) {
@@ -833,6 +967,43 @@ namespace maix::middleware::maixcam2 {
             } else {
                 strncpy(pCam->tPipeInfo[j].szBinPath, "null.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
             }
+        }
+        return 0;
+    }
+
+    static AX_U32 __sample_case_single_os04d10_720p60(AX_CAMERA_T *pCamList, SAMPLE_SNS_TYPE_E eSnsType,
+        SAMPLE_VIN_PARAM_T *pVinParam, COMMON_SYS_ARGS_T *pCommonArgs)
+    {
+        AX_CAMERA_T *pCam = NULL;
+        COMMON_VIN_MODE_E eSysMode = pVinParam->eSysMode;
+        AX_SNS_HDR_MODE_E eHdrMode = pVinParam->eHdrMode;
+        AX_S32 j = 0;
+        pCommonArgs->nCamCnt = 1;
+        pCam = &pCamList[0];
+        COMMON_VIN_GetSnsConfig(eSnsType, &pCam->tMipiAttr, &pCam->tSnsAttr,
+                                &pCam->tSnsClkAttr, &pCam->tDevAttr,
+                                &pCam->tPipeAttr[pCam->nPipeId], pCam->tChnAttr);
+        ::memcpy(&pCam->tMipiAttr, &gOs04d10_720P60_MipiAttr, sizeof(pCam->tMipiAttr));
+        ::memcpy(&pCam->tSnsAttr, &gOs04d10_720P60_SnsAttr, sizeof(pCam->tSnsAttr));
+        ::memcpy(&pCam->tDevAttr, &gOs04d10_720P60_DevAttr, sizeof(pCam->tDevAttr));
+        ::memcpy(&pCam->tPipeAttr[pCam->nPipeId], &gOs04d10_720P60_PipeAttr, sizeof(pCam->tPipeAttr[pCam->nPipeId]));
+        ::memcpy(&pCam->tChnAttr, &gOs04d10_720P60_Chn0Attr, sizeof(pCam->tChnAttr));
+        pCam->nDevId = 0;
+        pCam->nRxDev = 0;
+        pCam->nPipeId = 0;
+        pCam->nI2cAddr = 0x3c;
+        pCam->tSnsClkAttr.nSnsClkIdx = 0;
+        pCam->tDevBindPipe.nNum =  1;
+        pCam->tDevBindPipe.nPipeId[0] = pCam->nPipeId;
+        pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj(eSnsType);
+        pCam->eBusType = COMMON_ISP_GetSnsBusType(eSnsType);
+        pCam->eLaneComboMode = AX_LANE_COMBO_MODE_1;
+        __set_pipe_hdr_mode(&pCam->tDevBindPipe.nHDRSel[0], eHdrMode);
+        __set_vin_attr(pCam, eSnsType, eHdrMode, eSysMode, pVinParam->bAiispEnable);
+        for (j = 0; j < (AX_S32)pCam->tDevBindPipe.nNum; j++) {
+            pCam->tPipeInfo[j].ePipeMode = SAMPLE_PIPE_MODE_VIDEO;
+            pCam->tPipeInfo[j].bAiispEnable = pVinParam->bAiispEnable;
+            strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/os04d10_sipeed_sdr_2lane_720p60.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
         }
         return 0;
     }
@@ -858,12 +1029,63 @@ namespace maix::middleware::maixcam2 {
         pCam->tDevBindPipe.nPipeId[0] = pCam->nPipeId;
         pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj(eSnsType);
         pCam->eBusType = COMMON_ISP_GetSnsBusType(eSnsType);
+        pCam->eLaneComboMode = AX_LANE_COMBO_MODE_1;
         __set_pipe_hdr_mode(&pCam->tDevBindPipe.nHDRSel[0], eHdrMode);
         __set_vin_attr(pCam, eSnsType, eHdrMode, eSysMode, pVinParam->bAiispEnable);
         for (j = 0; j < (AX_S32)pCam->tDevBindPipe.nNum; j++) {
             pCam->tPipeInfo[j].ePipeMode = SAMPLE_PIPE_MODE_VIDEO;
             pCam->tPipeInfo[j].bAiispEnable = pVinParam->bAiispEnable;
-            strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/os04d10_sdr_color_0428_202509191031.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
+            strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/os04d10_sipeed_sdr_2lane_1440p30.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
+        }
+        return 0;
+    }
+
+    static AX_U32 __sample_case_single_sc850sl_1080p60(AX_CAMERA_T *pCamList, SAMPLE_SNS_TYPE_E eSnsType,
+        SAMPLE_VIN_PARAM_T *pVinParam, COMMON_SYS_ARGS_T *pCommonArgs)
+    {
+        AX_CAMERA_T *pCam = NULL;
+        COMMON_VIN_MODE_E eSysMode = pVinParam->eSysMode;
+        AX_SNS_HDR_MODE_E eHdrMode = pVinParam->eHdrMode;
+        AX_S32 j = 0;
+        SAMPLE_LOAD_RAW_NODE_E eLoadRawNode = pVinParam->eLoadRawNode;
+        pCommonArgs->nCamCnt = 1;
+
+        pCam = &pCamList[0];
+        pCam->nPipeId = 0;
+        COMMON_VIN_GetSnsConfig(eSnsType, &pCam->tMipiAttr, &pCam->tSnsAttr,
+                                    &pCam->tSnsClkAttr, &pCam->tDevAttr,
+                                    &pCam->tPipeAttr[pCam->nPipeId], pCam->tChnAttr);
+        ::memcpy(&pCam->tMipiAttr, &gSc850sl_1080P60_MipiAttr, sizeof(pCam->tMipiAttr));
+        ::memcpy(&pCam->tSnsAttr, &gSc850sl_1080P60_SnsAttr, sizeof(pCam->tSnsAttr));
+        ::memcpy(&pCam->tDevAttr, &gSc850sl_1080P60_DevAttr, sizeof(pCam->tDevAttr));
+        ::memcpy(&pCam->tPipeAttr[pCam->nPipeId], &gSc850sl_1080P60_PipeAttr, sizeof(pCam->tPipeAttr[pCam->nPipeId]));
+        ::memcpy(&pCam->tChnAttr, &gSc850sl_1080P60_Chn0Attr, sizeof(pCam->tChnAttr));
+        pCam->nDevId = 0;
+        pCam->nRxDev = 0;
+        pCam->nI2cAddr = 0x30;
+        pCam->tSnsClkAttr.nSnsClkIdx = 0;
+        pCam->tDevBindPipe.nNum =  1;
+        pCam->eLoadRawNode = eLoadRawNode;
+        pCam->tDevBindPipe.nPipeId[0] = pCam->nPipeId;
+        pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj(eSnsType);
+        pCam->eBusType = COMMON_ISP_GetSnsBusType(eSnsType);
+        pCam->eInputMode = AX_INPUT_MODE_MIPI;
+        pCam->eLaneComboMode = AX_LANE_COMBO_MODE_0;
+        __set_pipe_hdr_mode(&pCam->tDevBindPipe.nHDRSel[0], eHdrMode);
+        __set_vin_attr(pCam, eSnsType, eHdrMode, eSysMode, pVinParam->bAiispEnable);
+        for (j = 0; j < (AX_S32)pCam->tDevBindPipe.nNum; j++) {
+            pCam->tPipeInfo[j].ePipeMode = SAMPLE_PIPE_MODE_VIDEO;
+            pCam->tPipeInfo[j].bAiispEnable = pVinParam->bAiispEnable;
+            if (pCam->tPipeInfo[j].bAiispEnable) {
+                if (eHdrMode <= AX_SNS_LINEAR_MODE) {
+                    strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/sc850sl_sipeed_sdr_2lane_1080p60.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
+                    strncpy(pCam->tPipeInfo[j].szBinPath, "null.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
+                } else {
+                    strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/sc850sl_hdr_2x_ainr.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
+                }
+            } else {
+                strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/sc850sl_sipeed_sdr_2lane_1080p60.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
+            }
         }
         return 0;
     }
@@ -893,6 +1115,7 @@ namespace maix::middleware::maixcam2 {
         pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj(eSnsType);
         pCam->eBusType = COMMON_ISP_GetSnsBusType(eSnsType);
         pCam->eInputMode = AX_INPUT_MODE_MIPI;
+        pCam->eLaneComboMode = AX_LANE_COMBO_MODE_0;
         __set_pipe_hdr_mode(&pCam->tDevBindPipe.nHDRSel[0], eHdrMode);
         __set_vin_attr(pCam, eSnsType, eHdrMode, eSysMode, pVinParam->bAiispEnable);
         for (j = 0; j < (AX_S32)pCam->tDevBindPipe.nNum; j++) {
@@ -900,12 +1123,12 @@ namespace maix::middleware::maixcam2 {
             pCam->tPipeInfo[j].bAiispEnable = pVinParam->bAiispEnable;
             if (pCam->tPipeInfo[j].bAiispEnable) {
                 if (eHdrMode <= AX_SNS_LINEAR_MODE) {
-                    strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/sc850sl_hdr_4lane_sipeed_0716.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
+                    strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/sc850sl_sipeed_sdr_4lane_2160p30.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
                 } else {
                     strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/sc850sl_hdr_2x_ainr.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
                 }
             } else {
-                strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/sc850sl_hdr_4lane_sipeed_0716.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
+                strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/sc850sl_sipeed_sdr_4lane_2160p30.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
             }
         }
         return 0;
@@ -970,6 +1193,21 @@ namespace maix::middleware::maixcam2 {
             /* cams config */
             __sample_case_single_os04d10(pCamList, eSnsType, pVinParam, pCommonArgs);
         break;
+        case SAMPLE_VIN_SINGLE_OS04D10_720P60:
+            eSnsType = OMNIVISION_OS04D10;
+            /* comm pool config */
+            __cal_dump_pool(gtSysCommPoolSingleOs04d10Sdr, pVinParam->eHdrMode, pVinParam->nDumpFrameNum);
+            pCommonArgs->nPoolCfgCnt = sizeof(gtSysCommPoolSingleOs04d10Sdr) / sizeof(gtSysCommPoolSingleOs04d10Sdr[0]);
+            pCommonArgs->pPoolCfg = gtSysCommPoolSingleOs04d10Sdr;
+
+            /* private pool config */
+            __cal_dump_pool(gtPrivatePoolSingleOs04d10Sdr, pVinParam->eHdrMode, pVinParam->nDumpFrameNum);
+            pPrivArgs->nPoolCfgCnt = sizeof(gtPrivatePoolSingleOs04d10Sdr) / sizeof(gtPrivatePoolSingleOs04d10Sdr[0]);
+            pPrivArgs->pPoolCfg = gtPrivatePoolSingleOs04d10Sdr;
+
+            /* cams config */
+            __sample_case_single_os04d10_720p60(pCamList, eSnsType, pVinParam, pCommonArgs);
+        break;
         case SAMPLE_VIN_SINGLE_SC850SL:
             eSnsType = SMARTSENS_SC850SL;
             /* comm pool config */
@@ -984,6 +1222,21 @@ namespace maix::middleware::maixcam2 {
 
             /* cams config */
             __sample_case_single_sc850sl(pCamList, eSnsType, pVinParam, pCommonArgs);
+            break;
+        case SAMPLE_VIN_SINGLE_SC850SL_1080P60:
+            eSnsType = SMARTSENS_SC850SL;
+            /* comm pool config */
+            __cal_dump_pool(gtSysCommPoolSingleSc850slSdr, pVinParam->eHdrMode, pVinParam->nDumpFrameNum);
+            pCommonArgs->nPoolCfgCnt = sizeof(gtSysCommPoolSingleSc850slSdr) / sizeof(gtSysCommPoolSingleSc850slSdr[0]);
+            pCommonArgs->pPoolCfg = gtSysCommPoolSingleSc850slSdr;
+
+            /* private pool config */
+            __cal_dump_pool(gtPrivatePoolSingleSc850slSdr, pVinParam->eHdrMode, pVinParam->nDumpFrameNum);
+            pPrivArgs->nPoolCfgCnt = sizeof(gtPrivatePoolSingleSc850slSdr) / sizeof(gtPrivatePoolSingleSc850slSdr[0]);
+            pPrivArgs->pPoolCfg = gtPrivatePoolSingleSc850slSdr;
+
+            /* cams config */
+            __sample_case_single_sc850sl_1080p60(pCamList, eSnsType, pVinParam, pCommonArgs);
             break;
         default:
             eSnsType = SAMPLE_SNS_DUMMY;
@@ -1003,15 +1256,23 @@ namespace maix::middleware::maixcam2 {
         return 0;
     }
 
-    static SAMPLE_VIN_CASE_E __get_vi_case_from_sensor_name(char *sensor_name) {
+    static SAMPLE_VIN_CASE_E __get_vi_case(char *sensor_name, int fps = 30) {
         if (strcmp(sensor_name, "os04a10") == 0) {
             return SAMPLE_VIN_SINGLE_OS04A10;
         } else if (strcmp(sensor_name, "sc450ai") == 0) {
             return SAMPLE_VIN_SINGLE_SC450AI;
         } else if (strcmp(sensor_name, "sc850sl") == 0) {
-            return SAMPLE_VIN_SINGLE_SC850SL;
+            if (fps >= 60) {
+                return SAMPLE_VIN_SINGLE_SC850SL_1080P60;
+            } else {
+                return SAMPLE_VIN_SINGLE_SC850SL;
+            }
         } else if (strcmp(sensor_name, "os04d10") == 0) {
-            return SAMPLE_VIN_SINGLE_OS04D10;
+            if (fps >= 60) {
+                return SAMPLE_VIN_SINGLE_OS04D10_720P60;
+            } else {
+                return SAMPLE_VIN_SINGLE_OS04D10;
+            }
         } else {
             log::error("Can't find sensor %s", sensor_name);
             return SAMPLE_VIN_NONE;
@@ -1193,7 +1454,7 @@ namespace maix::middleware::maixcam2 {
                     log::error("get sensor name failed");
                     return err::ERR_RUNTIME;
                 }
-                tVinParam.eSysCase = __get_vi_case_from_sensor_name((char *)get_sensor_res.second.c_str());
+                tVinParam.eSysCase = __get_vi_case((char *)get_sensor_res.second.c_str());
 
                 // check if enable ai-isp
                 AX_BOOL ai_isp_on = app::get_sys_config_kv("npu", "ai_isp", "1") == "1" ? AX_TRUE : AX_FALSE;
@@ -1304,6 +1565,20 @@ namespace maix::middleware::maixcam2 {
     public:
         VI();
         ~VI();
+
+        std::pair<bool, std::string> get_sensor_name(void) {
+            return __get_sensor_name();
+        }
+
+        SAMPLE_VIN_CASE_E get_vi_case(char *sensor_name, int fps) {
+            return __get_vi_case(sensor_name, fps);
+        }
+
+        AX_U32 config_sample_case(SAMPLE_VIN_PARAM_T *pVinParam, COMMON_SYS_ARGS_T *pCommonArgs,
+                                        COMMON_SYS_ARGS_T *pPrivArgs) {
+            return __sample_case_config(pVinParam, pCommonArgs, pPrivArgs);
+        }
+
         err::Err init();
         err::Err deinit();
         int get_unused_channel();

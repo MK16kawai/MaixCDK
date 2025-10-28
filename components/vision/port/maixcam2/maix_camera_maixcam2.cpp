@@ -13,6 +13,8 @@
 #include <dirent.h>
 #include "ax_middleware.hpp"
 
+#define AX_NT_ENABLE        (0)
+
 using namespace maix;
 using namespace maix::middleware::maixcam2;
 #define ALIGN_UP_2(value) ((value + 0x1) & (~0x1))
@@ -491,7 +493,7 @@ namespace maix::camera
         int height_tmp = (height == -1) ? _height : height;
         image::Format format_tmp = (format == image::FMT_INVALID) ? _format : format;
         double fps_tmp = (fps == -1) ? _fps : fps;
-        _fps = fps_tmp;
+        _fps = fps_tmp > 30 ? 60 : fps_tmp;
         int buff_num_tmp =( buff_num == -1) ? _buff_num : buff_num;
         camera_priv_t *priv = (camera_priv_t *)_param;
 
@@ -520,8 +522,33 @@ namespace maix::camera
         mod_param.unlock(AX_MOD_VI);
         priv->i2c_addr = p_ax_cam->nI2cAddr;
 
+        // config vi param
+        COMMON_SYS_ARGS_T tCommonArgs = {0};
+        COMMON_SYS_ARGS_T tPrivArgs = {0};
+        SAMPLE_VIN_PARAM_T tVinParam = {
+            .eSysCase = SAMPLE_VIN_SINGLE_SC450AI,
+            .eSysMode = COMMON_VIN_SENSOR,
+            .eHdrMode = AX_SNS_LINEAR_MODE,
+            .eLoadRawNode = LOAD_RAW_IFE,
+            .bAiispEnable = AX_FALSE,
+            .statDeltaPtsFrmNum = 0,
+        };
+
+
         // init vi
         VI *ax_vi = new VI();
+        if (ax_vi == NULL) {
+            delete ax_sys;
+            err::check_raise(err::ERR_RUNTIME, "construct VI failed");
+        }
+        auto get_sensor_res = ax_vi->get_sensor_name();
+        if (!get_sensor_res.first) {
+            log::error("get sensor name failed");
+            return err::ERR_RUNTIME;
+        }
+        tVinParam.eSysCase = ax_vi->get_vi_case((char *)get_sensor_res.second.c_str(), _fps);
+        tVinParam.bAiispEnable = app::get_sys_config_kv("npu", "ai_isp", "1") == "1" ? AX_TRUE : AX_FALSE;
+        ax_vi->config_sample_case(&tVinParam, &tCommonArgs, &tPrivArgs);
         err = ax_vi->init();
         if (err != err::ERR_NONE) {
             delete ax_vi;
@@ -567,7 +594,12 @@ namespace maix::camera
         priv->chn.fit = fit;
         _ch = ch;
         _is_opened = true;
-
+#if AX_NT_ENABLE
+        auto axRet = COMMON_NT_Init(6000, 8082);
+        if (axRet) {
+            printf("COMMON_NT_Init fail, ret:0x%x\r\n", axRet);
+        }
+#endif
         this->vflip(priv->chn.vflip);
         this->hmirror(priv->chn.mirror);
         return err::ERR_NONE;
@@ -580,6 +612,9 @@ namespace maix::camera
         if (this->is_closed())
             return;
 
+#if AX_NT_ENABLE
+        COMMON_NT_DeInit();
+#endif
         ret = priv->ax_vi->del_channel(priv->chn.id);
         if (ret != err::ERR_NONE) {
             log::error("vi del_channel failed, ret:%d", ret);
