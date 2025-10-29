@@ -1079,7 +1079,6 @@ namespace maix::middleware::maixcam2 {
             if (pCam->tPipeInfo[j].bAiispEnable) {
                 if (eHdrMode <= AX_SNS_LINEAR_MODE) {
                     strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/sc850sl_sipeed_sdr_2lane_1080p60.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
-                    strncpy(pCam->tPipeInfo[j].szBinPath, "null.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
                 } else {
                     strncpy(pCam->tPipeInfo[j].szBinPath, "/opt/etc/sc850sl_hdr_2x_ainr.bin", sizeof(pCam->tPipeInfo[j].szBinPath));
                 }
