@@ -581,6 +581,13 @@ namespace maix::camera
             err::check_raise(err, "Add channel failed");
         }
 
+        if (tVinParam.eSysCase == SAMPLE_VIN_SINGLE_SC850SL_1080P60) {
+            auto axRet = AX_ISP_SetTopsLevel(ch, AX_ISP_AI_TOPS_LEVEL4);
+            if (0 != axRet) {
+                log::error("[%d] AX_ISP_SetTopsLevel failed, ret=0x%x.", ch, axRet);
+            }
+        }
+
         __get_global_info();
         __get_cam_flip_mirror(priv->chn.vflip, priv->chn.mirror);
         priv->chn.vflip = __invert_flip ? !priv->chn.vflip : priv->chn.vflip;
