@@ -829,12 +829,16 @@ static int app_config_param(void)
     }
 
     if (ui_get_focus_btn_update_flag()) {
+        int align = 64;
+#ifdef PLATFORM_MAIXCAM2
+        align = 2;
+#endif
         if (ui_get_focus_btn_touched()) {
-            int width = ALIGN(priv.disp->width(), 64);
-            int height = ALIGN(priv.disp->height(), 64);
+            int width = ALIGN(priv.disp->width(), align);
+            int height = ALIGN(priv.disp->height(), align);
             std::vector<int> sensor_size = priv.camera->get_sensor_size();
-            int windowing_x = ALIGN((sensor_size[0] - width) / 2, 64);
-            int windowing_y = ALIGN((sensor_size[1] - height) / 2, 64);
+            int windowing_x = ALIGN((sensor_size[0] - width) / 2, align);
+            int windowing_y = ALIGN((sensor_size[1] - height) / 2, align);
             priv.camera->set_windowing({windowing_x, windowing_y, width, height});
             log::info("camera set windowing, %d, %d, %d, %d", windowing_x, windowing_y, width, height);
         } else {

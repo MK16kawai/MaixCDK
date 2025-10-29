@@ -781,7 +781,7 @@ namespace maix::display
                     AX_VIDEO_FRAME_T tmp_frame;
                     frame->get_video_frame(&tmp_frame);
                     tmp_frame.s16CropX = crop_x;
-                    tmp_frame.s16CropX = crop_y;
+                    tmp_frame.s16CropY = crop_y;
                     tmp_frame.s16CropWidth = crop_w;
                     tmp_frame.s16CropHeight = crop_h;
                     frame->set_video_frame(&tmp_frame);
@@ -994,7 +994,7 @@ namespace maix::display
                 AX_VIDEO_FRAME_T tmp_frame;
                 frame->get_video_frame(&tmp_frame);
                 tmp_frame.s16CropX = crop_x;
-                tmp_frame.s16CropX = crop_y;
+                tmp_frame.s16CropY = crop_y;
                 tmp_frame.s16CropWidth = crop_w;
                 tmp_frame.s16CropHeight = crop_h;
                 frame->set_video_frame(&tmp_frame);

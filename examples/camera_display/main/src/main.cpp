@@ -43,6 +43,9 @@ static void __save_img(image::Image *img1, image::Image *img2 = nullptr) {
             fclose(f);
 
             log::info("save image to %s", path.c_str());
+
+            img1->save("frame1.jpg");
+            log::info("save image to frame1.jpg");
         }
 
         if (img2) {
@@ -60,6 +63,8 @@ static void __save_img(image::Image *img1, image::Image *img2 = nullptr) {
             fclose(f);
 
             log::info("save image to %s", path.c_str());
+            img2->save("frame2.jpg");
+            log::info("save image to frame2.jpg");
         }
     }
 }
