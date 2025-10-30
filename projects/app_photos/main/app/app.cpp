@@ -50,6 +50,13 @@ public:
         _video_path = video_path;
         _picture_path = picture_path;
         _video_photo_list = new std::list<std::pair<std::string, std::list<PhotoVideoInfo>>>();
+        if (!fs::exists(video_path)) {
+            fs::mkdir(video_path);
+        }
+
+        if (!fs::exists(picture_path)) {
+            fs::mkdir(picture_path);
+        }
         err::check_bool_raise(fs::exists(video_path), "video path not exist!");
         err::check_bool_raise(fs::exists(picture_path), "photo path not exist!");
     }

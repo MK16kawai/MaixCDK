@@ -496,9 +496,6 @@ namespace maix::display
             __config_vo_param(&vo_param, width, height, format, rotate);
             err::check_bool_raise(__vo->init(&vo_param) == err::ERR_NONE, "VO init failed");
             _bl_pwm = nullptr;
-            int pwm_id = 5;
-            _bl_pwm = new pwm::PWM(pwm_id, 10000, 50);
-
             _dst_pool.reset(this->_width*this->_height*image::fmt_size[this->format()], 1);
 
             __g_mutex.lock();

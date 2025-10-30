@@ -214,6 +214,11 @@ namespace maix::peripheral::pwm
             throw err::Exception(err::Err::ERR_IO, "export pwm failed");
         }
 
+        if (_pwm_set_duty_cycle(_chip_id, _id_offset, 0) != err::ERR_NONE)
+        {
+            throw err::Exception(err::Err::ERR_IO, "set pwm duty_cycle failed");
+        }
+
         if (_pwm_set_period(_chip_id, _id_offset, _period_ns) != err::ERR_NONE)
         {
             throw err::Exception(err::Err::ERR_IO, "set pwm period failed");
