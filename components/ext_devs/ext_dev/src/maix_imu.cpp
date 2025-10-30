@@ -53,35 +53,20 @@ std::vector<ext_dev::imu::IMUInfo> get_imu_info()
     }
 #elif PLATFORM_MAIXCAM2
     int default_i2c = 1;
-    auto iio_device_base_path = "/sys/bus/iio/devices/iio:device";
-    auto collect_iio_device_names = std::vector<std::string>();
-    int idx = 0;
-    while (!app::need_exit()) {
-        auto path = iio_device_base_path + std::to_string(idx) + "/name";
-        FILE *f = fopen(path.c_str(), "r");
-        if (f) {
-            char name[256];
-            if (fgets(name, sizeof(name), f) != NULL) {
-                name[strcspn(name, "\r\n")] = 0;
-                collect_iio_device_names.push_back(name);
-            }
-            fclose(f);
-            idx ++;
-        } else {
-            break;
+    auto bus = peripheral::i2c::I2C(default_i2c, peripheral::i2c::Mode::MASTER, 400000, peripheral::i2c::AddrSize::SEVEN_BIT);
+    auto res = bus.scan();
+    for(auto r : res)
+    {
+        if(r == 0x6B) // QMI8658 default i2c addr
+        {
+            ext_dev::imu::IMUInfo lsm6dsow_info;
+            lsm6dsow_info.name = "LSM6DSOWTR";
+            lsm6dsow_info.driver = "lsm6dsowtr";
+            lsm6dsow_info.i2c_bus = default_i2c;
+            lsm6dsow_info.addr = 0x6B;
+            lsm6dsow_info.have_mag = false; // QMI8658 does not have mag
+            info.push_back(lsm6dsow_info);
         }
-    }
-
-    if ((std::find(collect_iio_device_names.begin(), collect_iio_device_names.end(), "lsm6dsox_gyro") != collect_iio_device_names.end())) {
-        ext_dev::imu::IMUInfo imu_info;
-        imu_info.name = "LSM6DSOWTR";
-        imu_info.driver = "lsm6dsowtr";
-        imu_info.i2c_bus = default_i2c;
-        imu_info.addr = 0x6B;
-        imu_info.have_mag = false;
-        info.push_back(imu_info);
-    } else {
-        return info;
     }
 #endif
     return info;
@@ -139,7 +124,7 @@ IMU::IMU(std::string driver, int i2c_bus, int addr, int freq, imu::Mode mode, im
         param->driver.qmi8658 = new maix::ext_dev::qmi8658::QMI8658(i2c_bus, addr, freq, mode, acc_scale, acc_odr, gyro_scale, gyro_odr, block);
         break;
     case driver_type::lsm6dsowtr:
-        param->driver.lsm6dsowtr = new maix::ext_dev::lsm6dsowtr::LSM6DSOWTR(mode, acc_scale, acc_odr, gyro_scale, gyro_odr, block);
+        param->driver.lsm6dsowtr = new maix::ext_dev::lsm6dsowtr::LSM6DSOWTR(i2c_bus, addr, mode, acc_scale, acc_odr, gyro_scale, gyro_odr, block);
         break;
     default:
         throw err::Exception("Unsupported driver type");
