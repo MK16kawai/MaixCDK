@@ -7,7 +7,7 @@ set -e
 
 blacklist_linux=()
 blacklist_maixcam=()
-blacklist_maixcam2=("app_speech")
+blacklist_maixcam2=("app_speech", "app_thermal_camera")
 
 #############################################
 
