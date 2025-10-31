@@ -49,9 +49,9 @@ inline static std::unique_ptr<SPI> _spi{nullptr};
 
 #define g_spi (_spi.get())
 
-int tof_init(int spi_id)
+int tof_init(int spi_id, int cs_num = -1)
 {
-    _spi = std::move(std::make_unique<SPI>(spi_id, MASTER, 5000000));
+    _spi = std::move(std::make_unique<SPI>(spi_id, MASTER, 5000000, 0, 0, 8, cs_num));
 
     std::vector<uint8_t> data;
     data.push_back(0x00);

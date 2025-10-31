@@ -47,10 +47,10 @@ void _for_each_in_matrix(const TOFMatrix& matrix, std::function<void(int,int,uin
 }
 
 
-Tof100::Tof100(int spi_bus_num, Resolution resolution, ::maix::ext_dev::cmap::Cmap cmap, int dis_min, int dis_max)
+Tof100::Tof100(int spi_bus_num, Resolution resolution, ::maix::ext_dev::cmap::Cmap cmap, int dis_min, int dis_max, int spi_cs_num)
     : _cmap(cmap), _min(dis_min), _max(dis_max), _wh(static_cast<uint32_t>(resolution)), _fps_limit(20) /* FPS: auto */
 {
-
+#if PLATFORM_MAIXCAM
     if (spi_bus_num == 4) {
         using namespace maix::peripheral::pinmap;
         using namespace maix::err;
@@ -75,8 +75,27 @@ Tof100::Tof100(int spi_bus_num, Resolution resolution, ::maix::ext_dev::cmap::Cm
             a27.low();
         }
     }
-
-    spi_init(spi_bus_num);
+#elif PLATFORM_MAIXCAM2
+    if (spi_bus_num == 2) {
+        using namespace maix::peripheral::pinmap;
+        using namespace maix::err;
+        const std::vector<std::pair<std::string, std::string>> pins = {
+            {"B21", "SPI2_CS1"},
+            {"B19", "SPI2_MISO"},
+            {"B18", "SPI2_MOSI"},
+            {"B20", "SPI2_SCK"},
+            {"A8", "I2C7_SCL"},
+            {"A9", "I2C7_SDA"},
+        };
+        for (auto& i : pins) {
+            if (set_pin_function(i.first, i.second) != Err::ERR_NONE) {
+                panic("Set %s --> %s failed!", i.first.c_str(), i.second.c_str());
+            }
+        }
+        spi_cs_num = (spi_cs_num == -1) ? 1 : spi_cs_num;
+    }
+#endif
+    spi_init(spi_bus_num, spi_cs_num);
 
     if (DragSwReset() != 0) {
         panic("TOF reset failed!");
@@ -114,6 +133,17 @@ Tof100::Tof100(int spi_bus_num, Resolution resolution, ::maix::ext_dev::cmap::Cm
     this->_frame_buffer = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size]);
 
 }
+
+#if PLATFORM_MAIXCAM2
+static std::vector<std::vector<uint32_t>> rotate180(const std::vector<std::vector<uint32_t>>& matrix) {
+    std::vector<std::vector<uint32_t>> result = matrix;
+    std::reverse(result.begin(), result.end());
+    for (auto& row : result) {
+        std::reverse(row.begin(), row.end());
+    }
+    return result;
+}
+#endif
 
 TOFMatrix Tof100::matrix()
 {
@@ -209,6 +239,10 @@ TOFMatrix Tof100::matrix()
     this->_dis_max = std::make_tuple(max_x, max_y, max);
     this->_dis_min = std::make_tuple(min_x, min_y, min);
     this->_dis_center = std::make_tuple(center_x, center_y, center);
+
+#if PLATFORM_MAIXCAM2
+    res = rotate180(res);
+#endif
     return res;
 }
 

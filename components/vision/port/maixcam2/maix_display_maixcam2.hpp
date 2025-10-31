@@ -45,6 +45,8 @@ namespace maix::display
     static maixcam2::VO * __g_vo[2];
 
     static void __release_layer(int layer) {
+        auto &mod_param = maixcam2::AxModuleParam::getInstance();
+        mod_param.unlock(maixcam2::AX_MOD_VO);
         __g_mutex.lock();
         if (__g_vo[layer]) {
             __g_vo[layer]->del_channel(layer, __g_ch[layer]);
@@ -84,6 +86,18 @@ namespace maix::display
         __g_sys[layer] = nullptr;
         __g_vo[layer] = nullptr;
         __g_mutex.unlock();
+    }
+
+    static bool __vo_is_ready(int layer) {
+        bool is_ready = false;
+        __g_mutex.lock();
+        if (__g_vo[layer] && __g_vo[layer]) {
+            is_ready = true;
+        } else {
+            is_ready = false;
+        }
+        __g_mutex.unlock();
+        return is_ready;
     }
 
     __attribute__((unused)) static int _get_vo_max_size(int *width, int *height, int rotate)
@@ -664,59 +678,74 @@ namespace maix::display
 
         err::Err show(image::Image &img, image::Fit fit)
         {
-            err::check_bool_raise((img.width() % 2 == 0 && img.height() % 2 == 0), "Image width and height must be a multiple of 2.");
+            if (!__vo_is_ready(this->_layer)) {
+                return err::ERR_NOT_READY;
+            }
+
+            err::Err ret = err::ERR_NONE;
+            image::Image *input_img = &img;
+            maixcam2::Frame *input_frame = nullptr, *output_frame = nullptr;
+            bool need_delete_input_img = false;
+            int input_img_w = img.width(), intput_img_h = img.height();
             int format = img.format();
+            if (img.width() % 16 != 0) {
+                input_img_w = ((img.width() + 16) >> 4 )<< 4;
+                need_delete_input_img = true;
+            }
+            if (img.height() % 2 != 0) {
+                intput_img_h = ((img.height() + 2) >> 1 )<< 1;
+                need_delete_input_img = true;
+            }
+            if (need_delete_input_img) {
+                input_img = img.resize(input_img_w, intput_img_h, fit);
+                if (input_img == nullptr) {
+                    need_delete_input_img = false;
+                    log::warn("Failed to resize image to %dx%d", input_img_w, intput_img_h);
+                    ret = err::ERR_RUNTIME;
+                    goto _exit;
+                }
+            }
 
             if (this->_layer == 0) {
-                if (0 !=__reset_src_pool(_src_pool, img.width(), img.height(), img.format())) {
+                if (0 !=__reset_src_pool(_src_pool, input_img->width(), input_img->height(), input_img->format())) {
                     log::warn("Failed to reset src pool");
                 }
-
-                auto src_img = &img;
-                auto need_delete_src_img = false;
-                auto src_pool_id = _src_pool.pool_id();
-
-                maixcam2::Frame *frame = nullptr;
-                while (frame == nullptr && !app::need_exit()) {
+                while (input_frame == nullptr && !app::need_exit()) {
                     try {
-                        frame = new maixcam2::Frame(src_pool_id, src_img->width(), src_img->height(), src_img->data(), src_img->data_size(), maixcam2::get_ax_fmt_from_maix(src_img->format()));
+                        input_frame = new maixcam2::Frame(_src_pool.pool_id(), input_img->width(), input_img->height(), input_img->data(), input_img->data_size(), maixcam2::get_ax_fmt_from_maix(input_img->format()));
                     } catch (...) {
                         time::sleep_ms(5);
                     }
                 }
 
-                if (!frame) {
-                    return err::ERR_RUNTIME;
+                if (!input_frame) {
+                    ret = err::ERR_RUNTIME;
+                    goto _exit;
                 }
 
                 switch (fit) {
                 case image::FIT_CONTAIN:
                 {
-                    maixcam2::Frame *new_frame = nullptr;
-                    while (new_frame == nullptr && !app::need_exit()) {
+                    while (output_frame == nullptr && !app::need_exit()) {
                         try {
                             auto dst_pool_id = _dst_pool.pool_id();
-                            auto new_frame_format = src_img->format();
-                            new_frame = new maixcam2::Frame(dst_pool_id, _width, _height, nullptr, 0, maixcam2::get_ax_fmt_from_maix(new_frame_format));
+                            auto new_frame_format = input_img->format();
+                            output_frame = new maixcam2::Frame(dst_pool_id, _width, _height, nullptr, 0, maixcam2::get_ax_fmt_from_maix(new_frame_format));
                             if (new_frame_format >= image::FMT_YVU420SP && new_frame_format <= image::FMT_YUV420P) {
-                                memset(new_frame->data, 0, _width * _height);
-                                memset((uint8_t *)(new_frame->data) + _width * _height, 128, _width * _height / 2);
+                                memset(output_frame->data, 0, _width * _height);
+                                memset((uint8_t *)(output_frame->data) + _width * _height, 128, _width * _height / 2);
                             } else {
-                                memset(new_frame->data, 0, new_frame->len);
+                                memset(output_frame->data, 0, output_frame->len);
                             }
                         } catch (...) {
                             time::sleep_ms(5);
                         }
                     }
 
-                    if (!new_frame) {
-                        if (frame) {
-                            delete frame;
-                            frame = nullptr;
-                        }
-                        return err::ERR_RUNTIME;
+                    if (!output_frame) {
+                        ret = err::ERR_RUNTIME;
+                        goto _exit;
                     }
-
 
                     AX_IVPS_CROP_RESIZE_ATTR_T crop_resize_attr;
                     memset(&crop_resize_attr, 0, sizeof(AX_IVPS_CROP_RESIZE_ATTR_T));
@@ -727,61 +756,64 @@ namespace maix::display
                     crop_resize_attr.tAspectRatio.eAligns[0] = AX_IVPS_ASPECT_RATIO_VERTICAL_CENTER;
                     crop_resize_attr.tAspectRatio.eAligns[1] = AX_IVPS_ASPECT_RATIO_VERTICAL_CENTER;
                     crop_resize_attr.tAspectRatio.nBgColor = (AX_U32)0;
-                    AX_S32 ret = __ax_ivps_crop_resize_tdp(*frame, *new_frame, &crop_resize_attr, false);
+                    AX_S32 ret = __ax_ivps_crop_resize_tdp(*input_frame, *output_frame, &crop_resize_attr, false);
                     if (ret != 0) {
                         log::info("Failed to fit image, ret:%#x", ret);
-                        delete frame;
-                        delete new_frame;
-                        return err::ERR_RUNTIME;
+                        ret = err::ERR_RUNTIME;
+                        goto _exit;
                     }
 
                     // fit success, use new frame
-                    delete frame;
-                    frame = new_frame;
+                    delete input_frame;
+                    input_frame = nullptr;
                     break;
                 }
                 case image::FIT_COVER:
                 {
-                    float scale_x = (float)_width / frame->w;
-                    float scale_y = (float)_height / frame->h;
+                    float scale_x = (float)_width / input_frame->w;
+                    float scale_y = (float)_height / input_frame->h;
                     float scale = (float)_width / _height;
-                    int crop_x = 0, crop_y = 0, crop_w = frame->w, crop_h = frame->h;
+                    int crop_x = 0, crop_y = 0, crop_w = input_frame->w, crop_h = input_frame->h;
                     // log::info("_width:%d _height:%d", _width, _height);
                     // log::info("scale x %f, y %f, scale %f", scale_x, scale_y, scale);
-                    if (frame->w <= _width && frame->h <= _height) {
+                    if (input_frame->w <= _width && input_frame->h <= _height) {
                         // 图像在显示屏内部, 使用比例小的边
                         if (scale_x > scale_y) {        // x边小
-                            crop_w = frame->w;
+                            crop_w = input_frame->w;
                             crop_h = crop_w / scale;    // _w / _h = crop_w / crop_h; crop_h = crop_w * _h / _w;
                             crop_x = 0;
-                            crop_y = (frame->h - crop_h) / 2;
+                            crop_y = (input_frame->h - crop_h) / 2;
                         } else {                        // y边小
-                            crop_h = frame->h;
+                            crop_h = input_frame->h;
                             crop_w = crop_h * scale;    // _w / _h = crop_w / crop_h; crop_w = crop_h * _w / _h;
-                            crop_x = (frame->w - crop_w) / 2;
+                            crop_x = (input_frame->w - crop_w) / 2;
                             crop_y = 0;
                         }
                     } else {
                         // 图像在显示屏外部, 使用比例小的边
                         if (scale_x > scale_y) {        // y边小
-                            crop_w = frame->w;
+                            crop_w = input_frame->w;
                             crop_h = crop_w / scale;    // _w / _h = crop_w / crop_h; crop_w = crop_h * _w / _h;
                             crop_x = 0;
-                            crop_y = (frame->h - crop_h) / 2;
+                            crop_y = (input_frame->h - crop_h) / 2;
                         } else {                        // x边小
-                            crop_h = frame->h;
+                            crop_h = input_frame->h;
                             crop_w = crop_h * scale;    // _w / _h = crop_w / crop_h; crop_h = crop_w * _h / _w;
-                            crop_x = (frame->w - crop_w) / 2;
+                            crop_x = (input_frame->w - crop_w) / 2;
                             crop_y = 0;
                         }
                     }
                     AX_VIDEO_FRAME_T tmp_frame;
-                    frame->get_video_frame(&tmp_frame);
+                    input_frame->get_video_frame(&tmp_frame);
                     tmp_frame.s16CropX = crop_x;
                     tmp_frame.s16CropY = crop_y;
                     tmp_frame.s16CropWidth = crop_w;
                     tmp_frame.s16CropHeight = crop_h;
-                    frame->set_video_frame(&tmp_frame);
+                    input_frame->set_video_frame(&tmp_frame);
+
+                    // fit success, use new frame
+                    output_frame = input_frame;
+                    input_frame = nullptr;
                     break;
                 }
                 default:
@@ -789,9 +821,10 @@ namespace maix::display
                     break;
                 }
 
-                if (!frame) {
+                if (!output_frame) {
                     log::error("Unable to create a frame for display");
-                    return err::ERR_RUNTIME;
+                    ret = err::ERR_RUNTIME;
+                    goto _exit;
                 }
 
                 switch (format)
@@ -800,18 +833,17 @@ namespace maix::display
                 case image::FMT_RGB888:
                 case image::FMT_YVU420SP:
                 case image::FMT_YUV420SP:
-                    if (err::ERR_NONE != __vo->push(this->_layer, this->_ch, frame)) {
-                        log::error("mmf_vo_frame_push failed\n");
-                        delete frame;
-                        frame = nullptr;
-                        return err::ERR_RUNTIME;
+                    if (err::ERR_NONE != __vo->push(this->_layer, this->_ch, output_frame)) {
+                        log::warn("There's a problem with vo, but if it's just logging during exit, you can disregard it.");
+                        ret = err::ERR_RUNTIME;
+                        goto _exit;
                     }
                     break;
                 case image::FMT_BGRA8888:
                 {
-                    int width = src_img->width(), height = src_img->height();
+                    int width = input_img->width(), height = input_img->height();
                     image::Image *rgb = new image::Image(width, height, image::FMT_RGB888);
-                    uint8_t *src = (uint8_t *)src_img->data(), *dst = (uint8_t *)rgb->data();
+                    uint8_t *src = (uint8_t *)input_img->data(), *dst = (uint8_t *)rgb->data();
                     for (int i = 0; i < height; i ++) {
                         for (int j = 0; j < width; j ++) {
                             dst[(i * width + j) * 3 + 0] = src[(i * width + j) * 4 + 2];
@@ -819,20 +851,19 @@ namespace maix::display
                             dst[(i * width + j) * 3 + 2] = src[(i * width + j) * 4 + 0];
                         }
                     }
-                    if (0 != __vo->push(this->_layer, this->_ch, frame)) {
-                        log::error("mmf_vo_frame_push failed\n");
-                        delete frame;
-                        frame = nullptr;
-                        return err::ERR_RUNTIME;
+                    if (0 != __vo->push(this->_layer, this->_ch, output_frame)) {
+                        log::warn("There's a problem with vo, but if it's just logging during exit, you can disregard it.");
+                        ret = err::ERR_RUNTIME;
+                        goto _exit;
                     }
                     delete rgb;
                     break;
                 }
                 case image::FMT_RGBA8888:
                 {
-                    int width = src_img->width(), height = src_img->height();
+                    int width = input_img->width(), height = input_img->height();
                     image::Image *rgb = new image::Image(width, height, image::FMT_RGB888);
-                    uint8_t *src = (uint8_t *)src_img->data(), *dst = (uint8_t *)rgb->data();
+                    uint8_t *src = (uint8_t *)input_img->data(), *dst = (uint8_t *)rgb->data();
                     for (int i = 0; i < height; i ++) {
                         for (int j = 0; j < width; j ++) {
                             dst[(i * width + j) * 3 + 0] = src[(i * width + j) * 4 + 0];
@@ -840,53 +871,45 @@ namespace maix::display
                             dst[(i * width + j) * 3 + 2] = src[(i * width + j) * 4 + 2];
                         }
                     }
-                    if (0 != __vo->push(this->_layer, this->_ch, frame)) {
-                        log::error("mmf_vo_frame_push failed\n");
-                        delete frame;
-                        frame = nullptr;
-                        return err::ERR_RUNTIME;
+                    if (0 != __vo->push(this->_layer, this->_ch, output_frame)) {
+                        log::warn("There's a problem with vo, but if it's just logging during exit, you can disregard it.");
+                        ret = err::ERR_RUNTIME;
+                        goto _exit;
                     }
                     delete rgb;
                     break;
                 }
                 default:
                     log::error("display layer 0 not support format: %d\n", format);
-                    delete frame;
-                    frame = nullptr;
-                    return err::ERR_ARGS;
-                }
-
-                if (frame) {
-                    delete frame;
-                    frame = nullptr;
-                }
-
-                if (need_delete_src_img) {
-                    delete src_img;
-                    src_img = nullptr;
+                    ret = err::ERR_RUNTIME;
+                    goto _exit;
                 }
             } else if (this->_layer == 1) {
-                image::Image *new_img = &img;
+                image::Image *new_img = input_img;
+                bool need_delete_new_img = false;
                 if (format != image::FMT_BGRA8888) {
-                    new_img = img.to_format(image::FMT_BGRA8888);
+                    new_img = input_img->to_format(image::FMT_BGRA8888);
                     err::check_null_raise(new_img, "This image format is not supported, try image::Format::FMT_BGRA8888");
+                    need_delete_new_img = true;
                 }
 
-                if (img.width() != _width || img.height() != _height) {
+                if (input_img->width() != _width || input_img->height() != _height) {
                     log::error("image size not match, you must pass in an image of size %dx%d", _width, _height);
                     err::check_raise(err::ERR_RUNTIME, "image size not match");
                 }
 
-                maixcam2::Frame *frame = new  maixcam2::Frame(img.width(), img.height(), img.data(), img.data_size(), maixcam2::get_ax_fmt_from_maix(img.format()));
+                maixcam2::Frame *frame = new maixcam2::Frame(input_img->width(), input_img->height(), input_img->data(), input_img->data_size(), maixcam2::get_ax_fmt_from_maix(input_img->format()));
                 if (!frame) {
                     log::error("Failed to create frame");
-                    return err::Err(err::ERR_RUNTIME);
+                    ret = err::ERR_RUNTIME;
+                    goto _exit;
                 }
                 if (0 != __vo->push(this->_layer, this->_ch, frame)) {
-                    log::error("mmf_vo_frame_push failed\n");
+                    log::warn("There's a problem with vo, but if it's just logging during exit, you can disregard it.");
                     delete frame;
                     frame = nullptr;
-                    return err::ERR_RUNTIME;
+                    ret = err::ERR_RUNTIME;
+                    goto _exit;
                 }
 
                 if (frame) {
@@ -894,20 +917,41 @@ namespace maix::display
                     frame = nullptr;
                 }
 
-                if (format != image::FMT_BGRA8888) {
+                if (need_delete_new_img) {
                     delete new_img;
                 }
             } else {
                 log::error("not support layer: %d\n", this->_layer);
-                return err::ERR_ARGS;
+                    ret = err::ERR_ARGS;
+                    goto _exit;
+            }
+_exit:
+            if (need_delete_input_img) {
+                delete input_img;
+                input_img = nullptr;
             }
 
-            return err::ERR_NONE;
+            if (input_frame) {
+                delete input_frame;
+                input_frame = nullptr;
+            }
+
+            if (output_frame) {
+                delete output_frame;
+                output_frame = nullptr;
+            }
+            return ret;
         }
 
         err::Err push(pipeline::Frame *pipe_frame, image::Fit fit) {
             if (!pipe_frame) return err::ERR_ARGS;
+            if (!__vo_is_ready(this->_layer)) {
+                return err::ERR_NOT_READY;
+            }
+
             auto frame = (maixcam2::Frame *)pipe_frame->frame();
+            err::check_bool_raise((frame->w % 16 == 0), "Image width must be a multiple of 16.");
+            err::check_bool_raise((frame->h % 2 == 0), "Image height must be a multiple of 2.");
             maixcam2::Frame *new_frame = nullptr;
             switch (fit) {
             case image::FIT_CONTAIN:

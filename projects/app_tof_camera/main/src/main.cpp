@@ -84,10 +84,15 @@ int _main(int argc, char **argv)
     std::unique_ptr<Tof100> opns;
     int OPNS_MIN_DIS_MM = 40; // 4cm
     int OPNS_MAX_DIS_MM = 750; // 100cm
-
+    int spi_num = 4;
+#if PLATFORM_MAIXCAM
+    spi_num = 4;
+#elif PLATFORM_MAIXCAM2
+    spi_num = 2;
+#endif
     try {
         /* try to init opns */
-        opns.reset(new Tof100(4, prev_res, prev_cmap, OPNS_MIN_DIS_MM, OPNS_MAX_DIS_MM));
+        opns.reset(new Tof100(spi_num, prev_res, prev_cmap, OPNS_MIN_DIS_MM, OPNS_MAX_DIS_MM));
     } catch (...) {
         eprintln("Device Not Found!");
         show_error(disp, touchscreen);
@@ -102,7 +107,7 @@ int _main(int argc, char **argv)
             prev_cmap = g_cmap;
             prev_res = g_res;
             point_map_init_with_res(prev_res);
-            opns.reset(new Tof100(4, prev_res, prev_cmap, 40, 1000));
+            opns.reset(new Tof100(spi_num, prev_res, prev_cmap, 40, 1000));
         }
 
         auto matrix = opns->matrix();
@@ -148,6 +153,7 @@ int _main(int argc, char **argv)
         int __new_w = static_cast<int>(img->width()*aspect_ratio);
         __new_w += __new_w%2;
         auto show_img = Image(__new_w, img->height(), FMT_RGB888);
+        show_img.clear();
         // println("iw:%d, ih:%d, sw:%d, sh:%d", img->width(), img->height(), show_img.width(), show_img.height());
         int img_draw_x_oft = (show_img.width()-show_img.height()) / 2;
         show_img.draw_image(img_draw_x_oft, 0, *img);

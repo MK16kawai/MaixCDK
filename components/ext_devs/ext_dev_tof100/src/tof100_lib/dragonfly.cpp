@@ -550,7 +550,7 @@ void msl_setup(int fps, BinningMode mode, uint8_t exposure)
   SPII2CSetCmdValue(DRAG_8019_ANTIMMI_SET, (uint32_t *)&antimmi_config_, 1);
 }
 
-int spi_init(int id)
+int spi_init(int id, int cs_num)
 {
-  return tof_init(id);
+  return tof_init(id, cs_num);
 }

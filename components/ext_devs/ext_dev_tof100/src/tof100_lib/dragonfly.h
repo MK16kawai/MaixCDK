@@ -338,7 +338,7 @@ enum MSL_BinningMode {
   MSL_BinningMode2_4x4,
 };
 
-int spi_init(int id);
+int spi_init(int id, int spi_cs_num);
 void msl_setup(int fps, BinningMode mode, uint8_t exposure);
 bool DragFrameSave(uint32_t *data, uint32_t size, uint16_t frame_id);
 

@@ -46,13 +46,13 @@ public:
      *                 If both max and min are equal, it operates in auto mode:
      *                 the maximum distance in the frame is taken as the maximum reference distance,
      *                 and the minimum distance in the frame is taken as the minimum reference distance.
-     *
+     * @param spi_cs_num SPI chip select number.
      * @maixpy maix.ext_dev.tof100.Tof100.__init__
      */
     Tof100(int spi_bus_num,
             ::maix::ext_dev::tof100::Resolution resolution=::maix::ext_dev::tof100::Resolution::RES_50x50,
             ::maix::ext_dev::cmap::Cmap cmap=::maix::ext_dev::cmap::Cmap::JET,
-            int dis_min=-1, int dis_max=-1);
+            int dis_min=-1, int dis_max=-1, int spi_cs_num=-1);
 
     /**
      * @brief Retrieves sensor data and returns a distance matrix.
