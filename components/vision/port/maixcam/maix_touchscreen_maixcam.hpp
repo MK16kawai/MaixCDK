@@ -21,12 +21,84 @@ namespace maix::touchscreen
 
     class TouchScreen_MaixCam final : public TouchScreen_Base
     {
+        static bool __check_touch_screen_device(std::string &device)
+        {
+            bool success = false;
+            auto pos = device.find_last_of('/');
+            if(pos == std::string::npos)
+            {
+                return false;
+            }
+            auto device_substr = device.substr(pos + 1);
+            auto decive_name_path = "/sys/class/input/"+device_substr+"/device/name";
+            auto f = fopen(decive_name_path.c_str(), "r");
+            if (!f) {
+                log::warn("Can't find touch screen device: %s");
+                return false;
+            }
+
+            char buf[128] = {0};
+            auto len = fread(buf, 1, sizeof(buf), f);
+            if (len > 0) {
+                std::string str(buf);
+                str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
+                str.erase(std::remove(str.begin(), str.end(), '\r'), str.end());
+                if (strcmp(str.c_str(), "hyn_ts") == 0) {
+                    success = true;
+                }
+            }
+
+            fclose(f);
+            return success;
+        }
+
+        static std::string __find_touch_screen_device()
+        {
+            bool success = false;
+            int idx = 0;
+            while (!app::need_exit()) {
+                auto decive_name_path = "/sys/class/input/event"+to_string(idx)+"/device/name";
+                auto f = fopen(decive_name_path.c_str(), "r");
+                if (!f) {
+                    break;
+                }
+                char buf[128] = {0};
+                if (fread(buf, 1, sizeof(buf), f) > 0) {
+                    std::string str(buf);
+                    str.erase(std::remove(str.begin(), str.end(), '\n'), str.end());
+                    str.erase(std::remove(str.begin(), str.end(), '\r'), str.end());
+                    if (strcmp(str.c_str(), "hyn_ts") == 0) {
+                        success = true;
+                    }
+                }
+                fclose(f);
+
+                if (success) {
+                    break;
+                }
+
+                idx += 1;
+            }
+
+            if (success) {
+                return "/dev/input/event"+to_string(idx);
+            } else {
+                return "";
+            }
+        }
     public:
         TouchScreen_MaixCam(const std::string &device = "/dev/input/event1")
         {
             _opened = false;
             _fd = -1;
-            _device = device;
+
+            std::string new_device = device;
+            if (!__check_touch_screen_device(new_device)) {
+                new_device = __find_touch_screen_device();
+                err::check_bool_raise(!new_device.empty(), "Can't find touch screen device");
+                log::info("find touch screen device: %s", new_device.c_str());
+            }
+            _device = new_device;
         }
 
         err::Err open()

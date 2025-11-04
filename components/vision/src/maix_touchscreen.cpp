@@ -23,9 +23,9 @@ namespace maix::touchscreen
 #ifdef PLATFORM_LINUX
         _impl = new TouchScreen_SDL(device);
 #elif PLATFORM_MAIXCAM
-        _impl = new TouchScreen_MaixCam();
+        _impl = new TouchScreen_MaixCam(device);
 #elif PLATFORM_MAIXCAM2
-        _impl = new TouchScreen_MaixCam2();
+        _impl = new TouchScreen_MaixCam2(device);
 #else
     #warning "This platform not support touchscreen yet"
 #endif
