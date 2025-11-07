@@ -1255,22 +1255,38 @@ namespace maix::middleware::maixcam2 {
         return 0;
     }
 
-    static SAMPLE_VIN_CASE_E __get_vi_case(char *sensor_name, int fps = 30) {
+    static SAMPLE_VIN_CASE_E __get_vi_case(char *sensor_name, int w = -1, int h = -1, int fps = 30) {
         if (strcmp(sensor_name, "os04a10") == 0) {
             return SAMPLE_VIN_SINGLE_OS04A10;
         } else if (strcmp(sensor_name, "sc450ai") == 0) {
             return SAMPLE_VIN_SINGLE_SC450AI;
         } else if (strcmp(sensor_name, "sc850sl") == 0) {
-            if (fps >= 60) {
-                return SAMPLE_VIN_SINGLE_SC850SL_1080P60;
-            } else {
+            if (w == -1 || h == -1) {
                 return SAMPLE_VIN_SINGLE_SC850SL;
             }
+
+            if (fps > 30) {
+                return SAMPLE_VIN_SINGLE_SC850SL_1080P60;
+            } else {
+                if (w <= 1920 && h <= 1080) {
+                    return SAMPLE_VIN_SINGLE_SC850SL_1080P60;
+                } else {
+                    return SAMPLE_VIN_SINGLE_SC850SL;
+                }
+            }
         } else if (strcmp(sensor_name, "os04d10") == 0) {
-            if (fps >= 60) {
+            if (w == -1 || h == -1) {
+                return SAMPLE_VIN_SINGLE_OS04D10;
+            }
+
+            if (fps > 30) {
                 return SAMPLE_VIN_SINGLE_OS04D10_720P60;
             } else {
-                return SAMPLE_VIN_SINGLE_OS04D10;
+                if (w <= 1280 && h <= 720) {
+                    return SAMPLE_VIN_SINGLE_OS04D10_720P60;
+                } else {
+                    return SAMPLE_VIN_SINGLE_OS04D10;
+                }
             }
         } else {
             log::error("Can't find sensor %s", sensor_name);
@@ -1569,8 +1585,8 @@ namespace maix::middleware::maixcam2 {
             return __get_sensor_name();
         }
 
-        SAMPLE_VIN_CASE_E get_vi_case(char *sensor_name, int fps) {
-            return __get_vi_case(sensor_name, fps);
+        SAMPLE_VIN_CASE_E get_vi_case(char *sensor_name, int w, int h, int fps) {
+            return __get_vi_case(sensor_name, w, h, fps);
         }
 
         AX_U32 config_sample_case(SAMPLE_VIN_PARAM_T *pVinParam, COMMON_SYS_ARGS_T *pCommonArgs,

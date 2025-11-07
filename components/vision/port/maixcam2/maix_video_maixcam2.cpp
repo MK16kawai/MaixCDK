@@ -50,7 +50,29 @@ namespace maix::video
             return;
         }
     }
-
+#if 1
+    static __attribute__((unused)) void __print_vdec_grp_status(AX_VDEC_GRP_STATUS_T *vdec_grp_status) {
+        printf(" ================== vdec grp status ==================== \r\n");
+        printf("vdec_grp_status->enCodecType:%d\r\n", vdec_grp_status->enCodecType);
+        printf("vdec_grp_status->u32LeftStreamBytes:%d\r\n", vdec_grp_status->u32LeftStreamBytes);
+        printf("vdec_grp_status->u32LeftStreamFrames:%d\r\n", vdec_grp_status->u32LeftStreamFrames);
+        printf("vdec_grp_status->u32LeftPics:%d\r\n", vdec_grp_status->u32LeftPics);
+        printf("vdec_grp_status->bStartRecvStream:%d\r\n", vdec_grp_status->bStartRecvStream);
+        printf("vdec_grp_status->u32RecvStreamFrames:%d\r\n", vdec_grp_status->u32RecvStreamFrames);
+        printf("vdec_grp_status->u32DecodeStreamFrames:%d\r\n", vdec_grp_status->u32DecodeStreamFrames);
+        printf("vdec_grp_status->u32PicWidth:%d\r\n", vdec_grp_status->u32PicWidth);
+        printf("vdec_grp_status->u32PicHeight:%d\r\n", vdec_grp_status->u32PicHeight);
+        printf("vdec_grp_status->bInputFifoIsFull:%d\r\n", vdec_grp_status->bInputFifoIsFull);
+        printf("vdec_grp_status->stVdecDecErr.s32FormatErr:%d\r\n", vdec_grp_status->stVdecDecErr.s32FormatErr);
+        printf("vdec_grp_status->stVdecDecErr.s32PicSizeErrSet:%d\r\n", vdec_grp_status->stVdecDecErr.s32PicSizeErrSet);
+        printf("vdec_grp_status->stVdecDecErr.s32StreamUnsprt:%d\r\n", vdec_grp_status->stVdecDecErr.s32StreamUnsprt);
+        printf("vdec_grp_status->stVdecDecErr.s32PackErr:%d\r\n", vdec_grp_status->stVdecDecErr.s32PackErr);
+        printf("vdec_grp_status->stVdecDecErr.s32RefErrSet:%d\r\n", vdec_grp_status->stVdecDecErr.s32RefErrSet);
+        printf("vdec_grp_status->stVdecDecErr.s32PicBufSizeErrSet:%d\r\n", vdec_grp_status->stVdecDecErr.s32PicBufSizeErrSet);
+        printf("vdec_grp_status->stVdecDecErr.s32StreamSizeOver:%d\r\n", vdec_grp_status->stVdecDecErr.s32StreamSizeOver);
+        printf("vdec_grp_status->stVdecDecErr.s32VdecStreamNotRelease:%d\r\n", vdec_grp_status->stVdecDecErr.s32VdecStreamNotRelease);
+    }
+#endif
     static video::VideoType _get_video_type(const char *filename, video::VideoType type) {
         video::VideoType video_type = type;
         const char *suffix = strrchr(filename, '.');
@@ -992,6 +1014,7 @@ namespace maix::video
             cfg.w = _width;
             cfg.h = _height;
             cfg.type = maixcam2::AX_VDEC_TYPE_H264;
+            cfg.blk_cnt = 32;
             try {
                 vdec = new maixcam2::VDEC(&cfg);
             } catch (...) {
@@ -1330,15 +1353,26 @@ namespace maix::video
                     maixcam2::Frame *out_frame = nullptr;
                     video::MediaType media_type = MEDIA_TYPE_VIDEO;
                     if (block) {
+                        AX_VDEC_GRP_STATUS_T stGrpStatus;
+                        while (!app::need_exit()) {
+                            memset(&stGrpStatus, 0, sizeof(AX_VDEC_GRP_STATUS_T));
+                            if (AX_VDEC_QueryStatus(param->vdec->get_channel(), &stGrpStatus) != AX_SUCCESS) {
+                                log::error("AX_VDEC_QueryStatus FAILED!");
+                            }
+                            if (stGrpStatus.bInputFifoIsFull == false) {
+                                break;
+                            }
+                            time::sleep_ms(5);
+                        }
+
                         if (err::ERR_NONE != param->vdec->push(src_frame, 1000)) {
                             log::error("vdec push failed!");
                             goto __vdec_exit;
                         }
 
-                        AX_VDEC_GRP_STATUS_T stGrpStatus;
                         memset(&stGrpStatus, 0, sizeof(AX_VDEC_GRP_STATUS_T));
                         if (AX_VDEC_QueryStatus(param->vdec->get_channel(), &stGrpStatus) != AX_SUCCESS) {
-                            log::error("AX_VDEC_ResetGrp FAILED!");
+                            log::error("AX_VDEC_QueryStatus FAILED!");
                         }
 
                         if (stGrpStatus.u32LeftPics == 0) {
@@ -1395,6 +1429,9 @@ __vdec_exit:
                     if (img != NULL) {
                         break;
                     } else {
+                        if (app::need_exit()) {
+                            break;
+                        }
                         continue;
                     }
                 }

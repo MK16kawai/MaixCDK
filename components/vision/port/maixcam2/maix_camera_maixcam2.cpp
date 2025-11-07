@@ -553,7 +553,7 @@ namespace maix::camera
             log::error("get sensor name failed");
             return err::ERR_RUNTIME;
         }
-        tVinParam.eSysCase = ax_vi->get_vi_case((char *)get_sensor_res.second.c_str(), _fps);
+        tVinParam.eSysCase = ax_vi->get_vi_case((char *)get_sensor_res.second.c_str(), _width, _height, _fps);
         tVinParam.bAiispEnable = app::get_sys_config_kv("npu", "ai_isp", "1") == "1" ? AX_TRUE : AX_FALSE;
         ax_vi->config_sample_case(&tVinParam, &tCommonArgs, &tPrivArgs);
         err = ax_vi->init();
