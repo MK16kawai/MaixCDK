@@ -17,6 +17,15 @@ namespace maix::sys
         }
     }
 
+    void poweroff()
+    {
+        int ret = system("poweroff");
+        if (ret != 0)
+        {
+            throw err::Exception(err::Err::ERR_RUNTIME, "power off failed");
+        }
+    }
+
     void register_default_signal_handle() {
         signal(SIGINT, signal_handle);
     }

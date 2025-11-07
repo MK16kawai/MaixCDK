@@ -985,15 +985,6 @@ namespace maix::sys
         return partitions;
     }
 
-    void poweroff()
-    {
-        int ret = system("poweroff");
-        if (ret != 0)
-        {
-            log::error("power off failed, ret: %d", ret);
-            throw err::Exception(err::Err::ERR_RUNTIME, "power off failed");
-        }
-    }
 
     void reboot()
     {

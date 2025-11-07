@@ -12,7 +12,6 @@ namespace maix::sys
         raise(SIGINT);
 #endif
         util::do_exit_function();
-
         signal(SIGINT, nullptr);
         signal(SIGILL, nullptr);
         signal(SIGTRAP, nullptr);
@@ -21,6 +20,19 @@ namespace maix::sys
         signal(SIGFPE, nullptr);
         signal(SIGKILL, nullptr);
         signal(SIGSEGV, nullptr);
+    }
+
+    void poweroff()
+    {
+        util::do_exit_function();
+        system("devmem 0x4840000 32 0x0");  // disable wdt0
+        // system("devmem 0x2230000 32 0x0");  // disable wdt1
+        system("devmem 0x6040000 32 0x0");  // disable wdt2
+        int ret = system("poweroff");
+        if (ret != 0)
+        {
+            throw err::Exception(err::Err::ERR_RUNTIME, "power off failed");
+        }
     }
 
     void register_default_signal_handle() {

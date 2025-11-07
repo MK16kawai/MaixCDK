@@ -43,6 +43,7 @@ namespace maix::display
     static int __g_ch[2];
     static maixcam2::SYS *__g_sys[2];
     static maixcam2::VO * __g_vo[2];
+    static pwm::PWM * __g_pwm[2];
 
     static void __release_layer(int layer) {
         auto &mod_param = maixcam2::AxModuleParam::getInstance();
@@ -57,6 +58,10 @@ namespace maix::display
         if (__g_sys[layer]) {
             delete __g_sys[layer];
             __g_sys[layer] = nullptr;
+        }
+
+        if (__g_pwm[layer]) {
+            __g_pwm[layer]->duty(0);
         }
         __g_mutex.unlock();
     }
@@ -475,6 +480,7 @@ namespace maix::display
             __g_mutex.lock();
             __g_vo[this->_layer] = __vo;
             __g_sys[this->_layer] = __sys;
+            __g_pwm[this->_layer] = _bl_pwm;
             __g_ch[this->_layer] = 0;
             __g_mutex.unlock();
         }
