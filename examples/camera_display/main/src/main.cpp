@@ -22,6 +22,7 @@ static bool camera2_enable = false;
 static bool disp2_enable = false;
 static bool save_image_flag = false;
 fp5510::FP5510 *g_fp5510e = nullptr;
+static image::Fit g_fit = image::FIT_COVER;
 
 static void __save_img(image::Image *img1, image::Image *img2 = nullptr) {
     std::string suffix = ".rgb";
@@ -178,7 +179,7 @@ int _main(int argc, char* argv[])
 
         // time when read image finished
         t2 = time::ticks_ms();
-        disp.show(*img, image::FIT_COVER);
+        disp.show(*img, g_fit);
 
         // free image data, important!
         delete img;
@@ -241,6 +242,7 @@ static int cmd_init(void)
             "20 <pos>: set fp5510e pos\r\n"
             "21 : save camera img to file\r\n"
             "22 : set white balance gain\r\n"
+            "23 : set fit, 0:FIT_FILL, 1:FIT_CONTAIN, 2:FIT_COVER\r\n"
             "========================\r\n");
     fflush(stdin);
     return 0;
@@ -468,6 +470,24 @@ static int cmd_loop(camera::Camera *cam, display::Display *disp)
                 new_gains = cam->set_wb_gain(gains);
             }
             log::info("Get white balance gain to [%f, %f, %f, %f]", new_gains[0], new_gains[1], new_gains[2], new_gains[3]);
+            break;
+        }
+        case 23:
+        {
+            switch (value) {
+            case 0:
+                g_fit = image::FIT_FILL;
+                log::info("set fit mode: FIT_FILL");
+            break;
+            case 1:
+                g_fit = image::FIT_CONTAIN;
+                log::info("set fit mode: FIT_CONTAIN");
+            break;
+            default:
+                g_fit = image::FIT_COVER;
+                log::info("set fit mode: FIT_COVER");
+            break;
+            }
             break;
         }
         default:printf("The command %d was not found!\r\n", cmd); break;

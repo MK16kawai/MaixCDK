@@ -776,6 +776,12 @@ namespace maix::display
                 }
                 case image::FIT_COVER:
                 {
+                    if (ALIGN_UP(img.width(),16) == img.width() && ALIGN_UP(img.height(),2) == img.height()) {
+                        // fit success, use new frame
+                        output_frame = input_frame;
+                        input_frame = nullptr;
+                        break;
+                    }
                     float scale_x = (float)_width / input_frame->w;
                     float scale_y = (float)_height / input_frame->h;
                     float scale = (float)_width / _height;
@@ -824,6 +830,8 @@ namespace maix::display
                 }
                 default:
                     // do nothing, include image::FIT_FILL
+                    output_frame = input_frame;
+                    input_frame = nullptr;
                     break;
                 }
 
