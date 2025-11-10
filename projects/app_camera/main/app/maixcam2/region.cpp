@@ -9,58 +9,58 @@ typedef struct {
     void *vir_addr;
 } region_param_t;
 
-static AX_BOOL LoadImage(const char *pszImge, AX_U32 pImgSize, AX_U64 *pPhyAddr, AX_VOID **ppVirAddr)
-{
-    AX_S32 ret;
-    FILE *fp = fopen(pszImge, "rb");
+// static AX_BOOL LoadImage(const char *pszImge, AX_U32 pImgSize, AX_U64 *pPhyAddr, AX_VOID **ppVirAddr)
+// {
+//     AX_S32 ret;
+//     FILE *fp = fopen(pszImge, "rb");
 
-    if (fp)
-    {
-        ret = fseek(fp, 0, SEEK_END);
-        if (ret)
-        {
-            printf("fseek fail, ret=0x%x", ret);
-        }
-        AX_U32 nFileSize = ftell(fp);
-        if (pImgSize > 0 && pImgSize != nFileSize)
-        {
-            printf("file size not right, %d != %d", pImgSize, nFileSize);
-            fclose(fp);
-            return AX_FALSE;
-        }
-        ret = fseek(fp, 0, SEEK_SET);
-        if (ret)
-        {
-            printf("fseek fail, ret=0x%x", ret);
-        }
-        if (!nFileSize)
-        {
-            printf("%s nFileSize is 0 !", pszImge);
-            return AX_FALSE;
-        }
-        ret = AX_SYS_MemAlloc((AX_U64 *)pPhyAddr, ppVirAddr, nFileSize, 16, NULL);
-        if (0 != ret)
-        {
-            printf("AX_SYS_MemAlloc fail, ret=0x%x", ret);
-            fclose(fp);
-            return AX_FALSE;
-        }
-        if (fread(*ppVirAddr, 1, nFileSize, fp) != nFileSize)
-        {
-            printf("fread fail, %s", strerror(errno));
-            fclose(fp);
-            return AX_FALSE;
-        }
-        fclose(fp);
+//     if (fp)
+//     {
+//         ret = fseek(fp, 0, SEEK_END);
+//         if (ret)
+//         {
+//             printf("fseek fail, ret=0x%x", ret);
+//         }
+//         AX_U32 nFileSize = ftell(fp);
+//         if (pImgSize > 0 && pImgSize != nFileSize)
+//         {
+//             printf("file size not right, %d != %d", pImgSize, nFileSize);
+//             fclose(fp);
+//             return AX_FALSE;
+//         }
+//         ret = fseek(fp, 0, SEEK_SET);
+//         if (ret)
+//         {
+//             printf("fseek fail, ret=0x%x", ret);
+//         }
+//         if (!nFileSize)
+//         {
+//             printf("%s nFileSize is 0 !", pszImge);
+//             return AX_FALSE;
+//         }
+//         ret = AX_SYS_MemAlloc((AX_U64 *)pPhyAddr, ppVirAddr, nFileSize, 16, NULL);
+//         if (0 != ret)
+//         {
+//             printf("AX_SYS_MemAlloc fail, ret=0x%x", ret);
+//             fclose(fp);
+//             return AX_FALSE;
+//         }
+//         if (fread(*ppVirAddr, 1, nFileSize, fp) != nFileSize)
+//         {
+//             printf("fread fail, %s", strerror(errno));
+//             fclose(fp);
+//             return AX_FALSE;
+//         }
+//         fclose(fp);
 
-        return AX_TRUE;
-    }
-    else
-    {
-        printf("fopen %s fail, %s", pszImge, strerror(errno));
-        return AX_FALSE;
-    }
-}
+//         return AX_TRUE;
+//     }
+//     else
+//     {
+//         printf("fopen %s fail, %s", pszImge, strerror(errno));
+//         return AX_FALSE;
+//     }
+// }
 
 Region::Region(int x, int y, int width, int height, image::Format format, camera::Camera *camera)
 {
@@ -88,8 +88,8 @@ Region::Region(int x, int y, int width, int height, image::Format format, camera
         flip = !atoi(flip_string->second.c_str());
     }
 
-    int x2 = flip ? camera->width() - width - x : x;
-    int y2 = mirror ? camera->height() - height - y : y;
+    // int x2 = flip ? camera->width() - width - x : x;
+    // int y2 = mirror ? camera->height() - height - y : y;
 
     int ivps_grp = 0;
     int vi_vpss_chn = camera->get_channel();

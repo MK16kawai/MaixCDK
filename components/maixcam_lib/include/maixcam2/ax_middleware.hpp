@@ -877,6 +877,7 @@ namespace maix::middleware::maixcam2 {
             pCam->nRxDev = 0;
             pCam->tSnsClkAttr.nSnsClkIdx = 0;
             pCam->tDevBindPipe.nNum =  1;
+            pCam->eSnsType = eSnsType;
             pCam->tDevBindPipe.nPipeId[0] = pCam->nPipeId;
             pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj_User(eSnsType);
             pCam->eBusType = COMMON_ISP_GetSnsBusType(eSnsType);
@@ -912,6 +913,7 @@ namespace maix::middleware::maixcam2 {
         pCam->nI2cAddr = 0x36;
         pCam->tSnsClkAttr.nSnsClkIdx = 0;
         pCam->tDevBindPipe.nNum =  1;
+        pCam->eSnsType = eSnsType;
         pCam->tDevBindPipe.nPipeId[0] = pCam->nPipeId;
         pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj_User(eSnsType);
         pCam->eBusType = COMMON_ISP_GetSnsBusType(eSnsType);
@@ -947,6 +949,7 @@ namespace maix::middleware::maixcam2 {
         pCam->nI2cNode = 0;
         pCam->tSnsClkAttr.nSnsClkIdx = 0;
         pCam->tDevBindPipe.nNum =  1;
+        pCam->eSnsType = eSnsType;
         pCam->eLoadRawNode = eLoadRawNode;
         pCam->tDevBindPipe.nPipeId[0] = pCam->nPipeId;
         pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj_User(eSnsType);
@@ -994,6 +997,7 @@ namespace maix::middleware::maixcam2 {
         pCam->nI2cAddr = 0x3c;
         pCam->tSnsClkAttr.nSnsClkIdx = 0;
         pCam->tDevBindPipe.nNum =  1;
+        pCam->eSnsType = eSnsType;
         pCam->tDevBindPipe.nPipeId[0] = pCam->nPipeId;
         pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj(eSnsType);
         pCam->eBusType = COMMON_ISP_GetSnsBusType(eSnsType);
@@ -1026,6 +1030,7 @@ namespace maix::middleware::maixcam2 {
         pCam->nI2cAddr = 0x3c;
         pCam->tSnsClkAttr.nSnsClkIdx = 0;
         pCam->tDevBindPipe.nNum =  1;
+        pCam->eSnsType = eSnsType;
         pCam->tDevBindPipe.nPipeId[0] = pCam->nPipeId;
         pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj(eSnsType);
         pCam->eBusType = COMMON_ISP_GetSnsBusType(eSnsType);
@@ -1065,6 +1070,7 @@ namespace maix::middleware::maixcam2 {
         pCam->nI2cAddr = 0x30;
         pCam->tSnsClkAttr.nSnsClkIdx = 0;
         pCam->tDevBindPipe.nNum =  1;
+        pCam->eSnsType = eSnsType;
         pCam->eLoadRawNode = eLoadRawNode;
         pCam->tDevBindPipe.nPipeId[0] = pCam->nPipeId;
         pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj(eSnsType);
@@ -1109,6 +1115,7 @@ namespace maix::middleware::maixcam2 {
         pCam->nI2cAddr = 0x30;
         pCam->tSnsClkAttr.nSnsClkIdx = 0;
         pCam->tDevBindPipe.nNum =  1;
+        pCam->eSnsType = eSnsType;
         pCam->eLoadRawNode = eLoadRawNode;
         pCam->tDevBindPipe.nPipeId[0] = pCam->nPipeId;
         pCam->ptSnsHdl[pCam->nPipeId] = COMMON_ISP_GetSnsObj(eSnsType);

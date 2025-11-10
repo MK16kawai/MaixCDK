@@ -1351,6 +1351,14 @@ namespace maix::camera
 
         int max_width = ax_cam.tSnsAttr.nWidth;
         int max_height = ax_cam.tSnsAttr.nHeight;
+
+        if (ax_cam.eSnsType == SMARTSENS_SC850SL) {
+            max_width = 3840;
+            max_height = 2160;
+        } else if (ax_cam.eSnsType == OMNIVISION_OS04D10) {
+            max_width = 2560;
+            max_height = 1440;
+        }
         return {max_width, max_height};
     }
 

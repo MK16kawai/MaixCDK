@@ -345,11 +345,7 @@ int app_base_init(void)
         }
     }
     log::info("light_io: %s", light_io.c_str());
-#if PLATFORM_MAIXCAM2
-    pinmap::set_pin_function(light_io, "GP" + light_io);
-#else
     pinmap::set_pin_function(light_io, "GPIO" + light_io);
-#endif
     priv.light = new gpio::GPIO(light_io, gpio::Mode::OUT);
     err::check_null_raise(priv.light, "light gpio open failed");
     priv.light->low();
