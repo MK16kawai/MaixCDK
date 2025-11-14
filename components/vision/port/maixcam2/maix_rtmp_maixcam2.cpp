@@ -51,6 +51,8 @@ class RTMPClient
         AVCodecContext *audio_codec_ctx = NULL;
         SwrContext *audio_swr_ctx = nullptr;
         std::list<std::pair<size_t, Bytes *>> *pcm_list;
+        size_t audio_last_pts = 0;
+        size_t audio_last_duration = 0;
         int audio_sample_rate;
         int audio_channels;
         int audio_bitrate;
@@ -59,6 +61,7 @@ class RTMPClient
 
     ffmpeg_param_t _ffmpeg;
     bool _open;
+    size_t _open_ms = 0;
 public:
     static int ffmpeg_init(ffmpeg_param_t *ffmpeg)
     {
@@ -307,6 +310,7 @@ _free_format_context:
         }
 
         _open = true;
+        _open_ms = time::ticks_ms();
         return err::ERR_NONE;
     }
 
@@ -378,6 +382,21 @@ _free_format_context:
         return err::ERR_NONE;
     }
 
+    int get_audio_buffer_size() {
+        ffmpeg_param_t *ffmpeg = (ffmpeg_param_t *)&_ffmpeg;
+        AVFrame *audio_frame = ffmpeg->audio_frame;
+        size_t buffer_size = av_samples_get_buffer_size(NULL, ffmpeg->audio_channels, audio_frame->nb_samples, ffmpeg->audio_format, 1);
+        float time_base = ffmpeg->audio_stream->time_base.den / ffmpeg->audio_stream->time_base.num;
+        size_t frame_bytes_per_second = get_frame_size_per_second();
+        auto temp = (float)buffer_size * time_base / frame_bytes_per_second;
+        if (std::abs(temp - std::round(temp)) > 1e-10) {
+            temp = (int)temp + 1;
+        } else {
+            temp = (int)temp;
+        }
+        return temp * frame_bytes_per_second / 1000;;
+    }
+
     err::Err push(uint8_t *frame, size_t frame_size, uint64_t pts, bool is_audio = false)
     {
         ffmpeg_param_t *ffmpeg = (ffmpeg_param_t *)&_ffmpeg;
@@ -401,7 +420,7 @@ _free_format_context:
                 pkt->pts = pkt->dts = pts;
                 pkt->flags |= AV_PKT_FLAG_KEY;
                 ffmpeg->video_frame_count ++;
-                // log::info("[VIDEO] frame:%p frame_size:%d pts:%ld(%f s)", frame, frame_size, pkt->pts, this->timebase_to_ms(this->get_video_timebase(), pkt->pts) / 1000);
+                // log::info("[VIDEO] frame:%p frame_size:%d pts:%ld(%f s) timestamp:%fs", frame, frame_size, pkt->pts, this->timebase_to_ms(this->get_video_timebase(), pkt->pts) / 1000, (float)(time::ticks_ms() - _open_ms)/1000);
                 if (av_interleaved_write_frame(ffmpeg->format_context, pkt) < 0) {
                     fprintf(stderr, "send frame failed!\r\n");
                     av_packet_free(&pkt);
@@ -427,11 +446,20 @@ _free_format_context:
                     SwrContext *swr_ctx = ffmpeg->audio_swr_ctx;
                     AVFormatContext *outputFormatContext = ffmpeg->format_context;
                     AVPacket *audio_packet = pkt;
-                    size_t buffer_size = av_samples_get_buffer_size(NULL, ffmpeg->audio_channels, audio_frame->nb_samples, ffmpeg->audio_format, 1);
+                    size_t buffer_size = get_audio_buffer_size();
                     size_t pcm_remain_len = frame_size;
 
                     // fill last pcm to buffer_size
-                    size_t next_pts = pts;
+                    size_t next_pts = 0;
+
+                    if (std::abs((long long)ffmpeg->video_last_pts - (long long)ffmpeg->audio_last_pts) > 1000) {
+                        ffmpeg->audio_last_pts = ffmpeg->video_last_pts;
+                    }
+                    if (ffmpeg->audio_last_pts <= pts) {
+                        next_pts = ffmpeg->audio_last_pts + ffmpeg->audio_last_duration;
+                    } else {
+                        next_pts = pts;
+                    }
                     if (!pcm_list->empty()) {
                         auto last_item = pcm_list->back();
                         Bytes *last_pcm = last_item.second;
@@ -473,7 +501,7 @@ _free_format_context:
 
                     // for (auto it = _ffmpeg.pcm_list->begin(); it != _ffmpeg.pcm_list->end(); ++it) {
                     //     auto &item = *it;
-                    //     log::info("PTS:%d PCM:%p PCM_SIZE:%d", item.first, item.second->data, item.second->data_len);
+                    //     log::info("PTS:%d DURATION:%d PCM:%p PCM_SIZE:%d", item.first, get_audio_pts_from_pcm_size(item.second->data_len), item.second->data, item.second->data_len);
                     // }
 
                     // audio process
@@ -497,7 +525,10 @@ _free_format_context:
                                     audio_packet->stream_index = audio_stream->index;
                                     audio_packet->pts = audio_packet->dts = next_pts;
                                     audio_packet->duration = get_audio_pts_from_pcm_size(pcm->data_len);
+                                    ffmpeg->audio_last_pts = audio_packet->pts;
+                                    ffmpeg->audio_last_duration = audio_packet->duration;
 
+                                    // log::info("[AUDIO] frame:%p frame_size:%d pts:%ld(%f s) timestamp:%fs", pcm->data, pcm->data_len, audio_packet->pts, this->timebase_to_ms(this->get_audio_timebase(), audio_packet->pts) / 1000, (float)(time::ticks_ms() - _open_ms)/1000);
                                     av_interleaved_write_frame(outputFormatContext, audio_packet);
                                     av_packet_unref(audio_packet);
                                 }
@@ -849,11 +880,11 @@ namespace maix::rtmp {
                     audio_pts += rtmp_client->ms_to_pts(rtmp_client->get_audio_timebase(), loop_ms);
                 }
 
-                // log::info("pts:%d  pts %f s", audio_pts, rtmp_client->timebase_to_ms(rtmp_client->get_audio_timebase(), audio_pts) / 1000);
+                // log::info("[AUDIO] pts:%d  pts %f s", audio_pts, rtmp_client->timebase_to_ms(rtmp_client->get_audio_timebase(), audio_pts) / 1000);
                 Bytes *pcm_data = audio_recorder->record_bytes(-1);
                 if (pcm_data) {
                     if (pcm_data->data_len > 0) {
-                        if (err::ERR_NONE != rtmp_client->push(pcm_data->data, pcm_data->data_len, audio_pts, true)) {
+                        if (err::ERR_NONE != rtmp_client->push(pcm_data->data, pcm_data->data_len, -1, true)) {
                             log::error("rtmp push failed!");
                             break;
                         }
