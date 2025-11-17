@@ -547,6 +547,9 @@ namespace maix::display
             if(_bl_pwm && this->_layer == 0)    // _layer = 0, means video layer
             {
                 delete _bl_pwm;
+                __g_mutex.lock();
+                __g_pwm[this->_layer] = nullptr;
+                __g_mutex.unlock();
             }
         }
 
