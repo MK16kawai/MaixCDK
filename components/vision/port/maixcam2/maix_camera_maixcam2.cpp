@@ -34,26 +34,6 @@ namespace maix::camera
         return std::vector<std::string>();
     }
 
-    static void __enable_os04d10_immediate_update_register(peripheral::i2c::I2C &i2c_obj, int i2c_addr, int value) {
-        uint8_t reg_val = 0;
-        uint16_t reg_addr = 0xe7;
-        uint8_t temp[1] = {0x00};
-        i2c_obj.writeto_mem(i2c_addr, 0xfd, temp, sizeof(temp), 8);   // set page 0
-        auto data = i2c_obj.readfrom_mem(i2c_addr, reg_addr, 1, 8);
-        if (!data) {
-            return;
-        }
-        #define OS04D10_REG_UPDATE_CMD_MASK (0x01)
-        reg_val = data->data[0];
-        if (value) {
-            reg_val = (reg_val & ~OS04D10_REG_UPDATE_CMD_MASK) | OS04D10_REG_UPDATE_CMD_MASK;
-        } else {
-            reg_val = (reg_val & ~OS04D10_REG_UPDATE_CMD_MASK);
-        }
-        temp[0] = reg_val;
-        i2c_obj.writeto_mem(i2c_addr, reg_addr, temp, sizeof(temp), 8);
-    }
-
     static void __get_global_info() {
         peripheral::i2c::I2C i2c_obj(0, peripheral::i2c::Mode::MASTER);
 
@@ -856,6 +836,7 @@ namespace maix::camera
         }
 
         auto *priv = (camera_priv_t *)_param;
+        auto ax_vi = priv->ax_vi;
         peripheral::i2c::I2C i2c_obj(0, peripheral::i2c::Mode::MASTER);
         int mirror = false;
         switch (priv->i2c_addr) {
@@ -911,31 +892,7 @@ namespace maix::camera
         break;
         case 0x3c:
         {
-            __enable_os04d10_immediate_update_register(i2c_obj, priv->i2c_addr, 1);
-            uint8_t reg_val = 0;
-            uint16_t reg_addr = 0x32;
-            uint8_t temp[1] = {0x01};
-            i2c_obj.writeto_mem(priv->i2c_addr, 0xfd, temp, sizeof(temp), 8);   // set page 0
-            auto data = i2c_obj.readfrom_mem(priv->i2c_addr, reg_addr, 1, 8);
-            if (!data) {
-                return -1;
-            }
-            #define OS04D10_MIRROR_MASK (0x01)
-            reg_val = data->data[0];
-            mirror = (reg_val & OS04D10_MIRROR_MASK) ? true : false;
-            if (value >= 0) {
-                mirror = value > 0 ? true : false;
-                if (mirror) {
-                    reg_val = (reg_val & ~OS04D10_MIRROR_MASK) | OS04D10_MIRROR_MASK;
-                } else {
-                    reg_val = (reg_val & ~OS04D10_MIRROR_MASK);
-                }
-                temp[0] = {reg_val};
-                i2c_obj.writeto_mem(priv->i2c_addr, reg_addr, temp, sizeof(temp), 8);
-            } else {
-
-            }
-            __enable_os04d10_immediate_update_register(i2c_obj, priv->i2c_addr, 0);
+            mirror = ax_vi->set_and_get_mirror(priv->chn.id, value);
         }
         break;
         default:
@@ -952,6 +909,7 @@ namespace maix::camera
         }
 
         auto *priv = (camera_priv_t *)_param;
+        auto ax_vi = priv->ax_vi;
         peripheral::i2c::I2C i2c_obj(0, peripheral::i2c::Mode::MASTER);
         int flip = false;
         switch (priv->i2c_addr) {
@@ -1007,31 +965,7 @@ namespace maix::camera
         break;
         case 0x3c:
         {
-            __enable_os04d10_immediate_update_register(i2c_obj, priv->i2c_addr, 1);
-            uint8_t reg_val = 0;
-            uint16_t reg_addr = 0x32;
-            uint8_t temp[1] = {0x01};
-            i2c_obj.writeto_mem(priv->i2c_addr, 0xfd, temp, sizeof(temp), 8);   // set page 0
-            auto data = i2c_obj.readfrom_mem(priv->i2c_addr, reg_addr, 1, 8);
-            if (!data) {
-                return -1;
-            }
-            #define OS04D10_FLIP_MASK (0x02)
-            reg_val = data->data[0];
-            flip = (reg_val & OS04D10_FLIP_MASK) ? true : false;
-            if (value >= 0) {
-                flip = value > 0 ? true : false;
-                if (flip) {
-                    reg_val = (reg_val & ~OS04D10_FLIP_MASK) | OS04D10_FLIP_MASK;
-                } else {
-                    reg_val = (reg_val & ~OS04D10_FLIP_MASK);
-                }
-                temp[0] = reg_val;
-                i2c_obj.writeto_mem(priv->i2c_addr, reg_addr, temp, sizeof(temp), 8);
-            } else {
-
-            }
-            __enable_os04d10_immediate_update_register(i2c_obj, priv->i2c_addr, 0);
+            flip = ax_vi->set_and_get_flip(priv->chn.id, value);
         }
         default:
         break;
