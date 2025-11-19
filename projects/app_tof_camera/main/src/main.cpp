@@ -75,10 +75,10 @@ int _main(int argc, char **argv)
     touchscreen::TouchScreen touchscreen = touchscreen::TouchScreen();
     err::check_bool_raise(touchscreen.is_opened(), "touchscreen open failed");
     maix::lvgl_init(other_disp, &touchscreen);
-
     maix::ext_dev::cmap::Cmap prev_cmap = g_cmap;
     Resolution prev_res = g_res;
-
+    point_map_init_with_res(prev_res);
+    std::unique_ptr<camera::Camera> cam = std::make_unique<camera::Camera>(cam_onfo_o.w, cam_onfo_o.h);
     float aspect_ratio = static_cast<float>(disp.width()) / disp.height();
 
     std::unique_ptr<Tof100> opns;
@@ -100,8 +100,6 @@ int _main(int argc, char **argv)
 
     // opns.reset(new Tof100(4, prev_res, prev_cmap, OPNS_MIN_DIS_MM, OPNS_MAX_DIS_MM));
     ui_total_init(disp.width(), disp.height());
-    point_map_init_with_res(prev_res);
-    std::unique_ptr<camera::Camera> cam = std::make_unique<camera::Camera>(cam_onfo_o.w, cam_onfo_o.h);
     while (!app::need_exit()) {
         if (g_cmap != prev_cmap || g_res != prev_res) {
             prev_cmap = g_cmap;
