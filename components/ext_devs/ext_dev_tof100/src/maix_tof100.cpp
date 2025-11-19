@@ -84,13 +84,20 @@ Tof100::Tof100(int spi_bus_num, Resolution resolution, ::maix::ext_dev::cmap::Cm
             {"B19", "SPI2_MISO"},
             {"B18", "SPI2_MOSI"},
             {"B20", "SPI2_SCK"},
-            {"A8", "I2C7_SCL"},
-            {"A9", "I2C7_SDA"},
+            {"A8", "GPIOA8"},
+            {"A9", "GPIOA9"},
         };
         for (auto& i : pins) {
             if (set_pin_function(i.first, i.second) != Err::ERR_NONE) {
                 panic("Set %s --> %s failed!", i.first.c_str(), i.second.c_str());
             }
+        }
+        {
+            using namespace maix::peripheral::gpio;
+            GPIO ap_en("A8", Mode::OUT);
+            GPIO ap_sync("A9", Mode::OUT);
+            ap_en.low();
+            ap_sync.low();
         }
         spi_cs_num = (spi_cs_num == -1) ? 1 : spi_cs_num;
     }
