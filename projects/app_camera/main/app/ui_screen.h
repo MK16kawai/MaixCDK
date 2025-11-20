@@ -15,6 +15,9 @@ void ui_refresh(void);
 void ui_set_select_option(int idx);
 void ui_show_center_image(uint8_t *data, int data_size, int width, int height);
 void ui_click_raw_button();
+#ifdef PLATFORM_MAIXCAM2
+void ui_show_ai_isp(int en);
+#endif
 
 #ifdef __cplusplus
 } /*extern "C"*/

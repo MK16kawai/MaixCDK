@@ -465,6 +465,15 @@ namespace maix::camera
          * @maixcdk maix.camera.Camera.pop
         */
         pipeline::Frame *pop(int block_ms = 1000);
+
+#ifdef PLATFORM_MAIXCAM2
+        /**
+         * Get AI ISP work mode
+         * @return Returns true if AI ISP is running, otherwise returns false.
+         * @maixpy maix.camera.Camera.get_aiisp_workmode
+        */
+        bool get_aiisp_workmode();
+#endif
     private:
         std::string _device;
         int _ch;

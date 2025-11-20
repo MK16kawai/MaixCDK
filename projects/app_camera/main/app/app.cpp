@@ -80,6 +80,9 @@ static struct {
     uint64_t last_push_venc_ms;
     uint64_t video_pts;
     uint64_t audio_pts;
+#ifdef PLATFORM_MAIXCAM2
+    uint64_t last_check_aiisp_ms;
+#endif
     bool found_pps_frame;
     Bytes *pps;
 
@@ -712,6 +715,13 @@ int app_init(camera::Camera &cam)
 
 static int app_config_param(void)
 {
+#ifdef PLATFORM_MAIXCAM2
+        if (time::ticks_ms() - priv.last_check_aiisp_ms > 1000) {
+            priv.last_check_aiisp_ms = time::ticks_ms();
+            ui_show_ai_isp(priv.camera->get_aiisp_workmode());
+        }
+#endif
+
     if (ui_get_cam_snap_flag()) {
         printf("Take a photo\n");
         priv.cam_start_snap_flag = true;
@@ -805,7 +815,7 @@ static int app_config_param(void)
         if (ui_get_iso_auto_flag()) {
             printf("ISO setting: Auto\n");
             if (priv.sensor_ae_mode != 0) {
-                priv.sensor_ae_mode = 0;log::info(" ========================== [%s][%d]", __func__, __LINE__);
+                priv.sensor_ae_mode = 0;
                 priv.camera->exp_mode(camera::AeMode::Auto);
             }
         } else {

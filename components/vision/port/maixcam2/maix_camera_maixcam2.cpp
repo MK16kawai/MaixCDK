@@ -1330,5 +1330,17 @@ namespace maix::camera
         auto ax_vi = priv->ax_vi;
         return ax_vi;
     }
+
+    bool Camera::get_aiisp_workmode() {
+        auto *priv = (camera_priv_t *)_param;
+        AX_ISP_IQ_SCENE_PARAM_T IspSceneParam = {0};
+        AX_S32 ret = 0;
+        if (0 != (ret = AX_ISP_IQ_GetSceneParam(priv->chn.id, &IspSceneParam))) {
+            log::error("AX_ISP_IQ_GetSceneParam failed: %d", ret);
+            return false;
+        }
+
+        return IspSceneParam.tManualParam.nAiWorkMode ? true : false;
+    }
 }
 

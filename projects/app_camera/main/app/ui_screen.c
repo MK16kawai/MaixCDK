@@ -61,7 +61,9 @@ lv_obj_t* g_stack_setting_bar;
 lv_obj_t* g_stack_shot_number_setting_bar;
 
 lv_obj_t *g_drop_down_img;
-
+#ifdef PLATFORM_MAIXCAM2
+lv_obj_t *g_ai_isp_dot;
+#endif
 LV_IMG_DECLARE(img_delay);
 LV_IMG_DECLARE(img_exit);
 LV_IMG_DECLARE(img_option);
@@ -508,7 +510,17 @@ static void right_screen_init(void)
         lv_obj_add_event_cb(obj, event_touch_video_camera_cb, LV_EVENT_CLICKED, NULL);
         lv_obj_add_style(obj, &click_style, LV_STATE_CHECKED);
         lv_obj_add_style(obj, &release_style, LV_STATE_DEFAULT);
-
+#ifdef PLATFORM_MAIXCAM2
+        lv_obj_t *dot = lv_obj_create(obj);
+        lv_obj_set_pos(dot, 10, -10);
+        lv_obj_set_size(dot, 6, 6);
+        lv_obj_set_style_bg_color(dot, lv_color_hex(0xFF0000), 0);
+        lv_obj_set_style_bg_opa(dot, LV_OPA_COVER, 0);
+        lv_obj_remove_flag(dot, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_style_border_side(dot, LV_BORDER_SIDE_NONE, 0);
+        lv_obj_set_style_radius(dot, 3, 0);
+        g_ai_isp_dot = dot;
+#endif
         g_camera_video_button = obj;
     }
 
@@ -1650,6 +1662,19 @@ void ui_set_select_option(int idx)
         }
     }
 }
+
+#ifdef PLATFORM_MAIXCAM2
+void ui_show_ai_isp(int en) {
+    lv_obj_t *obj = g_ai_isp_dot;
+    if (obj) {
+        if (en) {
+            lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+}
+#endif
 
 static void screen_video_running(void)
 {
