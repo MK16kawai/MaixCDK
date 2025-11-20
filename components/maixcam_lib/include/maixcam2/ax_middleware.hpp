@@ -1272,28 +1272,28 @@ namespace maix::middleware::maixcam2 {
                 return SAMPLE_VIN_SINGLE_SC850SL;
             }
 
-            if (fps > 30) {
-                return SAMPLE_VIN_SINGLE_SC850SL_1080P60;
-            } else {
-                if (w <= 1920 && h <= 1080) {
-                    return SAMPLE_VIN_SINGLE_SC850SL_1080P60;
-                } else {
+            if (fps > 30 || fps <= 0) {
+                if (w > 1920 || h > 1080) {
                     return SAMPLE_VIN_SINGLE_SC850SL;
+                } else {
+                    return SAMPLE_VIN_SINGLE_SC850SL_1080P60;
                 }
+            } else {
+                return SAMPLE_VIN_SINGLE_SC850SL;
             }
         } else if (strcmp(sensor_name, "os04d10") == 0) {
             if (w == -1 || h == -1) {
                 return SAMPLE_VIN_SINGLE_OS04D10;
             }
 
-            if (fps > 30) {
-                return SAMPLE_VIN_SINGLE_OS04D10_720P60;
-            } else {
-                if (w <= 1280 && h <= 720) {
-                    return SAMPLE_VIN_SINGLE_OS04D10_720P60;
-                } else {
+            if (fps > 30 || fps <= 0) {
+                if (w > 1280 || h > 720) {
                     return SAMPLE_VIN_SINGLE_OS04D10;
+                } else {
+                    return SAMPLE_VIN_SINGLE_OS04D10_720P60;
                 }
+            } else {
+                return SAMPLE_VIN_SINGLE_OS04D10;
             }
         } else {
             log::error("Can't find sensor %s", sensor_name);
