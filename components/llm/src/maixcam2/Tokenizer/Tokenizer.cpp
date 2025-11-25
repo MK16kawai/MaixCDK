@@ -27,7 +27,7 @@ public:
     {
         _tokenizer_type = tokenizer_type;
         base_url = model_path;
-        if (!test_connect_http(base_url, 15))
+        if (!test_connect_http(base_url, 60))
         {
             ALOGE("connect %s failed", base_url.c_str());
             return false;
@@ -184,7 +184,7 @@ public:
 
         j["img_prompt"] = b_img_prompt;
         if(b_img_prompt)
-            j["vpm_len"] = vpm_len;
+            j["img_token_num"] = vpm_len;
         auto ret = cli->Post("/encode", j.dump(), "application/json");
         auto rep = ret.value();
         if (rep.status != 200)

@@ -21,6 +21,8 @@
 #include "maix_camera.hpp"
 #include "maix_image.hpp"
 #include "maix_util.hpp"
+#include "maix_peripheral.hpp"
+#include "maix_pinmap.hpp"
 #include "lvgl.h"
 #include "app.hpp"
 #include "maix_i2c.hpp"
@@ -56,12 +58,28 @@ BoolResult find_device()
     BoolResult res;
 
     bool total_flag = false;
-
+    int i2c_num = 5;
+#ifdef PLATFORM_MAIXCAM
     /* find mlx */
     ::system("insmod /mnt/system/ko/i2c-algo-bit.ko");
     ::system("insmod /mnt/system/ko/i2c-gpio.ko");
+    i2c_num = 5;
+#elif defined(PLATFORM_MAIXCAM2)
+    i2c_num = 7;
+    using namespace maix::peripheral::pinmap;
+    using namespace maix::err;
+    const std::vector<std::pair<std::string, std::string>> pins = {
+        {"A8", "I2C7_SCL"},
+        {"A9", "I2C7_SDA"},
+    };
+    for (auto& i : pins) {
+        if (set_pin_function(i.first, i.second) != Err::ERR_NONE) {
+            panic("Set %s --> %s failed!", i.first.c_str(), i.second.c_str());
+        }
+    }
+#endif
     {
-        auto i2cdev = I2C(5, Mode::MASTER);
+        auto i2cdev = I2C(i2c_num, Mode::MASTER);
         if (!i2cdev.scan(0x33).empty()) {
             total_flag = true;
             res.device = DeviceSupport::MLX90640;
@@ -107,10 +125,18 @@ int _main(int argc, char **argv)
     bool _fuf = false;
 
     auto ret = find_device();
-
+    int i2c_num = 5;
+#ifdef PLATFORM_MAIXCAM
+    /* find mlx */
+    ::system("insmod /mnt/system/ko/i2c-algo-bit.ko");
+    ::system("insmod /mnt/system/ko/i2c-gpio.ko");
+    i2c_num = 5;
+#elif defined(PLATFORM_MAIXCAM2)
+    i2c_num = 7;
+#endif
     if (ret.device == DeviceSupport::MLX90640) {
         std::unique_ptr<MLXC> g_mlx_c = nullptr;
-        g_mlx_c.reset(new MLXC(5, FPS::FPS_32, prev_cmap, temp_min, temp_max));
+        g_mlx_c.reset(new MLXC(i2c_num, FPS::FPS_32, prev_cmap, temp_min, temp_max));
         ui_total_init(disp.width(), disp.height());
         point_map_init(32, 24);
         while (!app::need_exit()) {

@@ -26,7 +26,7 @@ static std::string exec_cmd(std::string cmd)
     return result;
 }
 
-static int get_remaining_cmm_size()
+static __attribute__((unused)) int get_remaining_cmm_size()
 {
     std::string cmd = "cat /proc/ax_proc/mem_cmm_info |grep 'total size'";
     std::string result = exec_cmd(cmd);

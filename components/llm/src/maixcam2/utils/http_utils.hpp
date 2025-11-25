@@ -65,7 +65,7 @@ static bool test_connect(const std::string &host, int port)
  * @return true if the connection is successfully established within the timeout period,
  * false otherwise.
  */
-static bool test_connect_http(const std::string &http_url, int timeout)
+static bool __attribute__((unused)) test_connect_http(const std::string &http_url, int timeout)
 {
     size_t pos = http_url.find("://");
     if (pos == std::string::npos)

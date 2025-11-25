@@ -1832,5 +1832,9 @@ _error:
     void *Camera::get_driver() {
         return nullptr;
     }
+
+    bool Camera::get_aiisp_workmode() {
+        return false;
+    }
 }
 

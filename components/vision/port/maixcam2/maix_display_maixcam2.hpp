@@ -695,21 +695,42 @@ namespace maix::display
             image::Image *input_img = &img;
             maixcam2::Frame *input_frame = nullptr, *output_frame = nullptr;
             bool need_delete_input_img = false;
-            int input_img_w = img.width(), intput_img_h = img.height();
+            bool input_img_too_short = false;
+            int input_img_w = img.width(), input_img_h = img.height();
             int format = img.format();
             if (img.width() % 16 != 0) {
                 input_img_w = ((img.width() + 16) >> 4 )<< 4;
                 need_delete_input_img = true;
             }
             if (img.height() % 2 != 0) {
-                intput_img_h = ((img.height() + 2) >> 1 )<< 1;
+                input_img_h = ((img.height() + 2) >> 1 )<< 1;
                 need_delete_input_img = true;
             }
+            #define IMG_MIN_WIDTH     (64)
+            #define IMG_MIN_HEIGHT    (64)
+            if (img.width() < IMG_MIN_WIDTH || img.height() < IMG_MIN_HEIGHT) {
+                input_img_too_short = true;
+                need_delete_input_img = true;
+            }
+
             if (need_delete_input_img) {
-                input_img = img.resize(input_img_w, intput_img_h, fit);
+                if (input_img_too_short) {
+                    auto input_img_w_scale = (double)input_img_w / IMG_MIN_WIDTH;
+                    auto input_img_h_scale = (double)input_img_h / IMG_MIN_HEIGHT;
+                    double scale = std::min(input_img_h_scale, input_img_w_scale);
+                    input_img_w = input_img_w / scale;
+                    input_img_h = input_img_h / scale;
+                    input_img_w = ((input_img_w + 16) >> 4 )<< 4;
+                    input_img_h = ((input_img_h + 2) >> 1 )<< 1;
+                    input_img = img.resize(input_img_w, input_img_h, fit);
+                    // log::info("resize %dx%d to %dx%d", img.width(), img.height(), input_img_w, input_img_h);
+                } else {
+                    input_img = img.resize(input_img_w, input_img_h, fit);
+                    // log::info("resize %dx%d to %dx%d", img.width(), img.height(), input_img_w, input_img_h);
+                }
                 if (input_img == nullptr) {
                     need_delete_input_img = false;
-                    log::warn("Failed to resize image to %dx%d", input_img_w, intput_img_h);
+                    log::warn("Failed to resize image to %dx%d", input_img_w, input_img_h);
                     ret = err::ERR_RUNTIME;
                     goto _exit;
                 }
@@ -790,11 +811,15 @@ namespace maix::display
                         if (scale_x > scale_y) {        // x边小
                             crop_w = input_frame->w;
                             crop_h = crop_w / scale;    // _w / _h = crop_w / crop_h; crop_h = crop_w * _h / _w;
+                            crop_w = ALIGN_UP(crop_w, 16);
+                            crop_h = ALIGN_UP(crop_h, 2);
                             crop_x = 0;
                             crop_y = (input_frame->h - crop_h) / 2;
                         } else {                        // y边小
                             crop_h = input_frame->h;
                             crop_w = crop_h * scale;    // _w / _h = crop_w / crop_h; crop_w = crop_h * _w / _h;
+                            crop_w = ALIGN_UP(crop_w, 16);
+                            crop_h = ALIGN_UP(crop_h, 2);
                             crop_x = (input_frame->w - crop_w) / 2;
                             crop_y = 0;
                         }
@@ -803,11 +828,15 @@ namespace maix::display
                         if (scale_x > scale_y) {        // y边小
                             crop_w = input_frame->w;
                             crop_h = crop_w / scale;    // _w / _h = crop_w / crop_h; crop_w = crop_h * _w / _h;
+                            crop_w = ALIGN_UP(crop_w, 16);
+                            crop_h = ALIGN_UP(crop_h, 2);
                             crop_x = 0;
                             crop_y = (input_frame->h - crop_h) / 2;
                         } else {                        // x边小
                             crop_h = input_frame->h;
                             crop_w = crop_h * scale;    // _w / _h = crop_w / crop_h; crop_h = crop_w * _h / _w;
+                            crop_w = ALIGN_UP(crop_w, 16);
+                            crop_h = ALIGN_UP(crop_h, 2);
                             crop_x = (input_frame->w - crop_w) / 2;
                             crop_y = 0;
                         }

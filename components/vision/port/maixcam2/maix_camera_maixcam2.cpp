@@ -588,6 +588,14 @@ namespace maix::camera
         priv->chn.fit = fit;
         _ch = ch;
         _is_opened = true;
+
+        if (width_tmp % 16 != 0) {
+            log::warn("Width %d is not aligned to 16, will be set to %d", width_tmp, ALIGN_UP_16(width_tmp));
+        }
+        if (height_tmp % 2 != 0) {
+            log::warn("Height %d is not aligned to 2, will be set to %d", width_tmp, ALIGN_UP_2(height_tmp));
+        }
+
 #if AX_NT_ENABLE
         auto axRet = COMMON_NT_Init(6000, 8082);
         if (axRet) {
