@@ -71,7 +71,13 @@ std::vector<uint8_t> mix(const uint8_t* gray, const uint8_t* rgb, const uint32_t
 #endif
 
 template<typename T>
-std::vector<uint8_t> mix2(const std::vector<std::vector<T>>& matrix, const T mmax, const T mmin, const T vx, const T vn, const uint8_t* rgb, float gray_propor, bool reverse=false)
+std::vector<uint8_t> mix2(
+    const std::vector<std::vector<T>>& matrix,
+    const T mmax, const T mmin,
+    const T vx, const T vn,
+    const uint8_t* rgb, float gray_propor,
+    bool reverse=false
+)
 {
     if (matrix.empty()) return {};
     if (matrix.at(0).empty()) return {};
