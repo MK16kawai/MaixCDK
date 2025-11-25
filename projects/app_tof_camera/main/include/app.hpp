@@ -1,6 +1,10 @@
 #ifndef __458453489_APP_HPP__
 #define __458453489_APP_HPP__
 
+#include "global_config.h"
+#include "global_build_info_time.h"
+#include "global_build_info_version.h"
+
 #include "lvgl.h"
 #include "dbg.hpp"
 #include <memory>
@@ -75,7 +79,13 @@ LV_OBJ_NEW_WITH_NULL(clear_setting);
 using namespace maix::ext_dev::cmap;
 using namespace maix::ext_dev::tof100;
 inline static Cmap g_cmap{Cmap::JET};
-inline static Resolution g_res{Resolution::RES_50x50};
+inline static Resolution g_res{
+#if PLATFORM_MAIXCAM
+    Resolution::RES_50x50
+#elif PLATFORM_MAIXCAM2
+    Resolution::RES_100x100
+#endif
+};
 
 inline static bool cali_start = false;
 inline static std::vector<std::pair<int, int>> cali_points;
@@ -161,8 +171,13 @@ CrosshairObj* draw_sensor_crosshair(int x, int y, uint8_t r, uint8_t g, uint8_t 
     lv_color_t color = lv_color_make(r, g, b);
     lv_coord_t size = 32;
 
+    // DEBUG
     if constexpr (debug) {
-        println("[%s] show x:%d, y:%d", __PRETTY_FUNCTION__, show_x, show_y);
+        println("[%s] [%0.2f, %d, %0.2f, %d] (%d, %d) -> show x:%d, y:%d", 
+            __PRETTY_FUNCTION__,
+            g_mapinfo.x, g_mapinfo.x_ofs,
+            g_mapinfo.y, g_mapinfo.y_ofs,
+            x, y, show_x, show_y);
     }
 
     return draw_crosshair(g_base_screen, show_x, show_y, size, color);
@@ -205,6 +220,34 @@ void upate_3crosshair_and_label(std::tuple<int,int,T> minp, std::tuple<int,int,T
     auto [min_x, min_y, minv] = minp;
     auto [max_x, max_y, maxv] = maxp;
     auto [center_x, center_y, centerv] = centerp;
+
+#if PLATFORM_MAIXCAM2
+    {
+        int reswh = 0;
+        switch (g_res) {
+        case Resolution::RES_25x25:
+            reswh = 25;
+            break;
+        case Resolution::RES_50x50:
+            reswh = 50;
+            break;
+        case Resolution::RES_100x100:
+            reswh = 100;
+            break;
+        };
+        min_x = reswh - min_x;
+        min_y = reswh - min_y;
+        max_x = reswh - max_x;
+        max_y = reswh - max_y;
+    }
+#endif
+
+    // DEBUG
+    if constexpr (false) {
+        println("min (%d, %d, %d)", min_x, min_y, minv);
+        println("max (%d, %d, %d)", max_x, max_y, maxv);
+        println("cen (%d, %d, %d)", center_x, center_y, centerv);
+    }
 
     if (g_res == Resolution::RES_25x25) {
         min_x *= 2;
@@ -357,6 +400,7 @@ void update_user_crosshair(const std::vector<std::vector<T>>& matrix)
         } else if constexpr (std::is_same_v<T, float>) {
             lv_label_set_text_fmt(user_label, "user: %0.2f%s", value, symbol);
         }
+        // println("show (%d, %d); sen (%d, %d)", show_x, show_y, sensor_x, sensor_y);
     }
 
 }
@@ -490,8 +534,13 @@ void fusion_setting_cb(lv_event_t * e)
         lv_obj_add_flag(g_fusion_setting, LV_OBJ_FLAG_HIDDEN);
         lv_obj_remove_flag(g_clear_setting, LV_OBJ_FLAG_HIDDEN);
 
+// #if PLATFORM_MAIXCAM
         println("Set reso to 50x50");
         g_res = Resolution::RES_50x50;
+// #elif PLATFORM_MAIXCAM2
+//         println("Set reso to 100x100");
+//         g_res = Resolution::RES_100x100;
+// #endif
 
         println("Try to load cfg");
         if (load_cali_cfg() >= 0) {
@@ -881,6 +930,8 @@ void ui_total_init(int w, int h, bool device_exist=true)
     }
     g_screen_w = w;
     g_screen_h = h;
+
+    println("=================disp (%d, %d)", g_screen_w, g_screen_h);
 
     ui_prefix_init();
     ui_exit_init();

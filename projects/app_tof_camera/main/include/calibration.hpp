@@ -1,6 +1,10 @@
 #ifndef __JASHGDCAJALP_CALIBRATION_HPP
 #define __JASHGDCAJALP_CALIBRATION_HPP
 
+#include "global_config.h"
+#include "global_build_info_time.h"
+#include "global_build_info_version.h"
+
 #include <cstdlib>
 #include <cmath>
 #include <iostream>
@@ -8,8 +12,11 @@
 #include <filesystem>
 #include "dbg.hpp"
 
-
+#if PLATFORM_MAIXCAM
 inline static std::string CFG_PATH("./assets/cfg.bin");
+#elif PLATFORM_MAIXCAM2
+inline static std::string CFG_PATH("./assets/cfg2.bin");
+#endif
 
 struct CameraImageInfo {
     int w;      // 采集图像宽度
