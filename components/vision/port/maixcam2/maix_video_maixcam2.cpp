@@ -187,6 +187,7 @@ namespace maix::video
 
         unique_ptr<maixcam2::SYS> sys;
         maixcam2::VENC *venc;
+        maixcam2::ax_venc_param_t venc_param;
     } encoder_param_t;
 
     Encoder::Encoder(std::string path, int width, int height, image::Format format, VideoType type, int framerate, int gop, int bitrate, int time_base, bool capture, bool block) {
@@ -386,6 +387,7 @@ namespace maix::video
         param->sys = make_unique<maixcam2::SYS>(false);
         param->sys->init();
         param->venc = new maixcam2::VENC(&cfg);
+        memcpy(&param->venc_param, &cfg, sizeof(cfg));
 
         // audio init
         param->audio_last_pts = 0;
@@ -461,6 +463,22 @@ namespace maix::video
         auto curr_ms = time::ticks_ms();
         video::Frame *frame = nullptr;
 
+        if (!img) {
+            log::error("encode img is null");
+            return new video::Frame();
+        }
+
+        if (param->venc_param.w != img->width()
+            || param->venc_param.h != img->height()
+            || param->venc_param.fmt !=  maixcam2::get_ax_fmt_from_maix(img->format())) {
+            delete param->venc;
+            param->venc_param.w = img->width();
+            param->venc_param.h = img->height();
+            param->venc_param.fmt = maixcam2::get_ax_fmt_from_maix(img->format());
+            param->venc = new maixcam2::VENC(&param->venc_param);
+            err::check_null_raise(param->venc, "venc reinit failed");
+        }
+
         // Check if need save frame to file
         if (_path.size() == 0) {
             need_save = false;
@@ -475,7 +493,7 @@ namespace maix::video
             if (err::ERR_NONE != pop_frame->get_venc_stream(&stream)) {
                 log::error("get venc stream failed!");
                 delete pop_frame;
-                return nullptr;
+                return new video::Frame();
             }
 
             // for (size_t i = 0; i < stream.stPack.u32NaluNum; i ++) {
@@ -495,7 +513,7 @@ namespace maix::video
                     if (!frame_buffer) {
                         log::error("av malock failed!");
                         delete pop_frame;
-                        return nullptr;
+                        return new video::Frame();
                     }
 
                     memcpy(frame_buffer, (uint8_t *)pop_frame->data, pop_frame->len);
@@ -525,7 +543,7 @@ namespace maix::video
                         if (av_interleaved_write_frame(param->outputFormatContext, param->pPacket) < 0) {
                             log::error("av_interleaved_write_frame failed!");
                             delete pop_frame;
-                            return nullptr;
+                            return new video::Frame();
                         }
                         if (last_frame_buffer) {
                             av_free(last_frame_buffer);
@@ -545,9 +563,12 @@ namespace maix::video
         err = param->venc->push(&new_frame, 1000);
         if (err != err::ERR_NONE) {
             log::error("encode failed! err:%d", err);
-            return nullptr;
+            return new video::Frame();
         }
 
+        if (!frame) {
+            frame = new video::Frame();
+        }
         return frame;
     }
 
