@@ -128,6 +128,37 @@ namespace maix::peripheral::pwm
         return err::ERR_NONE;
     }
 
+    static err::Err _pwm_get_period(int chip_id, int offset, size_t *period)
+    {
+        int fd;
+        char buf[100];
+        snprintf(buf, sizeof(buf), PERIOD_PATH, chip_id, offset);
+
+        if (period == nullptr)
+        {
+            log::error("period is nullptr\r\n");
+            return err::ERR_ARGS;
+        }
+
+        fd = ::open(buf, O_RDWR);
+        if (fd < 0)
+        {
+            log::error("open %s failed\r\n", buf);
+            return err::ERR_IO;
+        }
+        if (0 > ::read(fd, buf, sizeof(buf)))
+        {
+            log::error("read peroid_ns = %s failed\r\n", buf);
+            close(fd);
+            return err::ERR_IO;
+        }
+        fsync(fd);
+        close(fd);
+
+        *period = atoi(buf);
+        return err::ERR_NONE;
+    }
+
     static err::Err _pwm_set_duty_cycle(int chip_id, int offset, int duty_cycle)
     {
         int fd;
@@ -214,9 +245,17 @@ namespace maix::peripheral::pwm
             throw err::Exception(err::Err::ERR_IO, "export pwm failed");
         }
 
-        if (_pwm_set_duty_cycle(_chip_id, _id_offset, 0) != err::ERR_NONE)
+        size_t curr_period = 0;
+        if (_pwm_get_period(_chip_id, _id_offset, &curr_period) != err::ERR_NONE)
         {
-            throw err::Exception(err::Err::ERR_IO, "set pwm duty_cycle failed");
+            throw err::Exception(err::Err::ERR_IO, "get pwm period failed");
+        }
+
+        if (curr_period > 0) {
+            if (_pwm_set_duty_cycle(_chip_id, _id_offset, 0) != err::ERR_NONE)
+            {
+                throw err::Exception(err::Err::ERR_IO, "set pwm duty_cycle failed");
+            }
         }
 
         if (_pwm_set_period(_chip_id, _id_offset, _period_ns) != err::ERR_NONE)
