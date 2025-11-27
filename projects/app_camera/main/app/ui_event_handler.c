@@ -52,6 +52,7 @@ extern lv_obj_t *g_bitrate_button;
 extern lv_obj_t *g_drop_down_img;
 extern lv_obj_t *g_timestamp_button;
 extern lv_obj_t *g_timelapse_button;
+extern lv_obj_t *g_ai_isp_dot;
 
 static struct {
     unsigned int camera_snap_start_flag : 1;
@@ -281,6 +282,10 @@ void touch_video_camera()
         DEBUG_PRT("ready to record video!\n");
         g_camera_mode = 1;
     }
+
+#ifdef PLATFORM_MAIXCAM2
+    lv_obj_add_flag(g_ai_isp_dot, LV_OBJ_FLAG_HIDDEN);
+#endif
 }
 
 void event_touch_video_camera_cb(lv_event_t * e)

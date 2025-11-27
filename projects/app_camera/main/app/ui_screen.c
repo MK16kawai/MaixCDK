@@ -1677,6 +1677,11 @@ void ui_set_select_option(int idx)
 void ui_show_ai_isp(int en) {
     lv_obj_t *obj = g_ai_isp_dot;
     if (obj) {
+        if (g_camera_mode == 0) {   // picture mode
+            lv_obj_set_pos(obj, 10, -10);
+        } else {                    // video mode
+            lv_obj_set_pos(obj, -20, -11);
+        }
         if (en) {
             lv_obj_clear_flag(obj, LV_OBJ_FLAG_HIDDEN);
         } else {

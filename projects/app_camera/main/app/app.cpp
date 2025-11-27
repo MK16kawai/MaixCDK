@@ -620,6 +620,9 @@ int app_base_loop(void)
                 read_pcm_size = remain_frame_bytes;
             }
 
+#if PLATFORM_MAIXCAM2
+            read_pcm_size = -1;
+#endif
             Bytes *pcm_data = priv.audio_recorder->record_bytes(read_pcm_size);
             if (pcm_data) {
                 if (pcm_data->data_len > 0) {
