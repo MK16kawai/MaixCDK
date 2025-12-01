@@ -57,8 +57,55 @@ namespace maix::peripheral::spi
         transfer.cs_change = used_soft_cs;
         // log::info("[__spi_transfer] cs_change = %d", transfer.cs_change);
 
-        if (::ioctl(fd, SPI_IOC_MESSAGE(1), &transfer) < 1)
-            return -1;
+        if (txbuf) {
+            auto data_size = len;
+            auto p_data = (uint8_t *)txbuf;
+            uint8_t tmp_data = 0;
+            if (data_size > 50)  {
+                if (data_size % 4 == 0) {
+                    for (size_t i = 0; i < data_size; i += 4) {
+                        for (size_t j = i; j < i + 2; j++) {
+                            tmp_data = p_data[j];
+                            p_data[j] = p_data[i + i + 4 - j - 1];
+                            p_data[i + i + 4 - j - 1] = tmp_data;
+                        }
+                    }
+                } else if (data_size % 2 == 0) {
+                    for (size_t i = 0; i < data_size; i += 2) {
+                        tmp_data = p_data[i];
+                        p_data[i] = p_data[i + 1];
+                        p_data[i + 1] = tmp_data;
+                    }
+                }
+            }
+        }
+        int res = ::ioctl(fd, SPI_IOC_MESSAGE(1), &transfer);
+        if (res < 1) {
+            log::error("[__spi_transfer] run ioctl failed! res:%d", res);
+            return res;
+        }
+        if (rxbuf) {
+            auto data_size = len;
+            auto p_data = (uint8_t *)rxbuf;
+            uint8_t tmp_data = 0;
+            if (data_size > 50)  {
+                if (data_size % 4 == 0) {
+                    for (size_t i = 0; i < data_size; i += 4) {
+                        for (size_t j = i; j < i + 2; j++) {
+                            tmp_data = p_data[j];
+                            p_data[j] = p_data[i + i + 4 - j - 1];
+                            p_data[i + i + 4 - j - 1] = tmp_data;
+                        }
+                    }
+                } else if (data_size % 2 == 0) {
+                    for (size_t i = 0; i < data_size; i += 2) {
+                        tmp_data = p_data[i];
+                        p_data[i] = p_data[i + 1];
+                        p_data[i + 1] = tmp_data;
+                    }
+                }
+            }
+        }
 
         return 0;
     }

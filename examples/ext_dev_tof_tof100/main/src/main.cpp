@@ -1,7 +1,7 @@
 
 #include "maix_basic.hpp"
 #include "main.h"
-
+#include "maix_sys.hpp"
 #include "maix_display.hpp"
 #include "maix_tof100.hpp"
 #include "maix_pinmap.hpp"
@@ -12,27 +12,43 @@ using namespace maix::ext_dev::tof100;
 using namespace maix::peripheral::pinmap;
 using namespace maix::ext_dev::cmap;
 
-static const std::vector<std::pair<std::string, std::string>> pins = {
-    {"A24", "SPI4_CS"},
-    {"A23", "SPI4_MISO"},
-    {"A25", "SPI4_MOSI"},
-    {"A22", "SPI4_SCK"},
-};
-
 int _main(int argc, char* argv[])
 {
+    auto disp = Display();
+    int id = 4;
+    if (sys::device_id() == "maixcam") {
+        id = 4;
+        const std::vector<std::pair<std::string, std::string>> pins = {
+            {"A24", "SPI4_CS"},
+            {"A23", "SPI4_MISO"},
+            {"A25", "SPI4_MOSI"},
+            {"A22", "SPI4_SCK"},
+        };
 
-    for (auto& i : pins) {
-        if (set_pin_function(i.first, i.second) != maix::err::Err::ERR_NONE) {
-            log::info("%s --> %s failed!", i.first.c_str(), i.second.c_str());
-            return -1;
+        for (auto& i : pins) {
+            if (set_pin_function(i.first, i.second) != maix::err::Err::ERR_NONE) {
+                log::info("%s --> %s failed!", i.first.c_str(), i.second.c_str());
+                return -1;
+            }
+        }
+    } else {
+        id = 2;
+        const std::vector<std::pair<std::string, std::string>> pins = {
+            {"B21", "SPI2_CS1"},
+            {"B19", "SPI2_MISO"},
+            {"B18", "SPI2_MOSI"},
+            {"B20", "SPI2_SCK"},
+        };
+
+        for (auto& i : pins) {
+            if (set_pin_function(i.first, i.second) != maix::err::Err::ERR_NONE) {
+                log::info("%s --> %s failed!", i.first.c_str(), i.second.c_str());
+                return -1;
+            }
         }
     }
 
-    auto disp = Display();
-
-    auto tof = Tof100(4, Resolution::RES_100x100, Cmap::JET, 40, 1000);
-
+    auto tof = Tof100(id, Resolution::RES_100x100, Cmap::JET, 40, 1000);
     while (!app::need_exit()) {
         auto img = tof.image();
         if (img == nullptr)

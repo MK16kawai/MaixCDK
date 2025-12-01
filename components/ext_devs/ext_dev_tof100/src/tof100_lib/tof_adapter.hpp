@@ -98,6 +98,7 @@ int spi_transmit_receive(SPI* dev, const void *send_buf, void *recv_buf, uint32_
     clone_with_rearrange_rx(rx_b->data, length, reinterpret_cast<uint32_t*>(recv_buf));
 
 #if 0
+    u8_len = u8_len > 50 ? 50 : u8_len;
     maix::log::info0("spi_transmit_receive [RW]Tx: ");
     for (int i = 0; i < u8_len; ++i) {
         printf("[%02x]", tx_buff[i]);
@@ -123,6 +124,7 @@ int spi_transmit(SPI* dev, void *buffer, uint32_t size, uint8_t type)
     maix::Bytes tx_b(tx_buff.get(), u8_len, false, false);
 
 #if 0
+    u8_len = u8_len > 50 ? 50 : u8_len;
     maix::log::info0("spi_transmit [W]Tx: ");
     for (int i = 0; i < u8_len; ++i) {
         printf("[%02x]", tx_buff[i]);

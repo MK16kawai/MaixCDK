@@ -1,6 +1,7 @@
 #include "maix_basic.hpp"
 #include "main.h"
 #include "maix_spi.hpp"
+#include "maix_sys.hpp"
 #include "maix_pinmap.hpp"
 #include <map>
 
@@ -50,6 +51,7 @@ int _main(int argc, char* argv[])
     log::info("Init spi4 end");
 #endif
 #ifdef USE_SPI2
+    if (sys::device_id() == "maixcam") {
     const std::map<std::string, std::string> pin_functions{
         {"P18", "SPI2_CS"},
         {"P21", "SPI2_MISO"},
@@ -65,7 +67,23 @@ int _main(int argc, char* argv[])
             return -1;
         }
     }
+    } else {
+        const std::map<std::string, std::string> pin_functions{
+                {"B21", "SPI2_CS1"},
+                {"B19", "SPI2_MISO"},
+                {"B18", "SPI2_MOSI"},
+                {"B20", "SPI2_SCK"},
+        };
 
+        log::info("Use pinmap to configure SPI2.");
+        for (const auto& item : pin_functions) {
+            if (err::ERR_NONE != pinmap::set_pin_function(item.first, item.second)) {
+                log::error("Set pin{%s} to function{%s} failed!",
+                    item.first.c_str(), item.second.c_str());
+                return -1;
+            }
+        }
+    }
     log::info("Init spi2");
     spi::SPI dev(2, spi::Mode::MASTER, 400000);
     log::info("Init spi2 end");
