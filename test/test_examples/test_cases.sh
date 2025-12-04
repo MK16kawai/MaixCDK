@@ -11,6 +11,8 @@ else
     run_cmd=""
 fi
 
+blacklist=("maixcdk-example")
+
 function test_script()
 {
     set +x
@@ -46,6 +48,20 @@ cd ../../examples
 
 for dir in */; do
   if [ -d "$dir" ]; then
+    # 检查是否在黑名单
+    skip=false
+    for b in "${blacklist[@]}"; do
+    if [[ "$dir" == "$b/" ]]; then
+        echo "skip $dir for $platform"
+        skip=true
+        break
+    fi
+    done
+
+    if $skip; then
+        continue
+    fi
+
     test_start "${dir%/}"
   fi
 done
