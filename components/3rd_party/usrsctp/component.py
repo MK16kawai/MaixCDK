@@ -7,7 +7,7 @@ def add_file_downloads(confs : dict) -> list:
     version = "0.9.5.0"
     url = f"https://github.com/sctplab/usrsctp/archive/refs/tags/{version}.tar.gz"
     if version == "0.9.5.0":
-        sha256sum = "260107caf318650a57a8caa593550e39bca6943e93f970c80d6c17e59d62cd92."
+        sha256sum = "260107caf318650a57a8caa593550e39bca6943e93f970c80d6c17e59d62cd92"
     else:
         raise Exception(f"version {version} not support")
     sites = ["https://github.com/sctplab/usrsctp"]
