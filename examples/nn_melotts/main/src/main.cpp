@@ -3,9 +3,6 @@
 #include "maix_nn_melotts.hpp"
 #include "main.h"
 #include "maix_image.hpp"
-#ifndef PLATFORM_MAIXCAM2
-#error "This demo only support maixcam2"
-#else
 using namespace maix;
 int _main(int argc, char *argv[])
 {
@@ -71,4 +68,3 @@ int main(int argc, char *argv[])
     // So we catch exception here to let resources be released(call objects' destructor) before exit.
     CATCH_EXCEPTION_RUN_RETURN(_main, -1, argc, argv);
 }
-#endif
