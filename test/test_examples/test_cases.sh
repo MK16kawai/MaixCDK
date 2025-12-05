@@ -5,6 +5,7 @@ set -x
 
 platform=$1
 need_run=$2
+start_from="$3"
 if [ "${need_run}x" == "1x" ]; then
     run_cmd="maixcdk run"
 else
@@ -12,7 +13,10 @@ else
 fi
 
 blacklist=("maixcdk-example")
-
+start_test_flag=false
+if [ "$start_from" == "" ]; then
+    start_test_flag=true
+fi
 function test_script()
 {
     set +x
@@ -59,6 +63,18 @@ for dir in */; do
     done
 
     if $skip; then
+        continue
+    fi
+
+    # 检查是否开始测试
+    if [ -n $start_test_flag ]; then
+        if [[ "${dir}" == "${start_from}/" ]]; then
+            start_test_flag=true
+        fi
+    fi
+
+    if ! $start_test_flag; then
+        echo "skip $dir, wait ${start_from}"
         continue
     fi
 

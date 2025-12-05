@@ -18,6 +18,11 @@ namespace maix::sys
         }
     }
 
+    void poweroff()
+    {
+        log::info("Your platform is linux, poweroff will not execute");
+    }
+
     void register_default_signal_handle() {
         signal(SIGINT, signal_handle);
     }

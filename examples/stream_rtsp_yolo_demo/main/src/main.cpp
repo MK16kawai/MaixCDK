@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include "queue"
+#ifdef PLATFORM_MAIXCAM
 #include "sophgo_middleware.hpp"
 #include "rtsp_server.h"
 
@@ -284,6 +285,14 @@ int _main(int argc, char* argv[])
 
     return 0;
 }
+#else
+using namespace maix;
+int _main(int argc, char* argv[])
+{
+    log::error("This example is not supported on this platform.");
+    return 0;
+}
+#endif
 
 int main(int argc, char* argv[])
 {

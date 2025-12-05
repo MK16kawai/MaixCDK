@@ -17,7 +17,7 @@
 #include <vector>
 #include <unordered_map>
 #include <fstream>
-#include "onnxruntime_cxx_api.h"
+#include "onnxruntime/onnxruntime_cxx_api.h"
 #include "maix_nn_melotts.hpp"
 
 namespace maix::nn

@@ -42,9 +42,10 @@ int _main(int argc, char *argv[])
         uint64_t t = time::ticks_ms();
         maix::image::Image *img = cam.read();
         err::check_null_raise(img, "read camera failed");
-        std::vector<nn::FaceObject> *result = recognizer.recognize(*img, conf_threshold, iou_threshold);
-        for (auto &r : *result)
+        nn::FaceObjects *results = recognizer.recognize(*img, conf_threshold, iou_threshold);
+        for (auto &result : *results)
         {
+            auto r = *result;
             img->draw_rect(r.x, r.y, r.w, r.h, maix::image::Color::from_rgb(255, 0, 0));
             snprintf(tmp_chars, sizeof(tmp_chars), "%s:%.2f", recognizer.labels[r.class_id].c_str(), r.score);
             img->draw_string(r.x, r.y, tmp_chars, maix::image::Color::from_rgb(255, 0, 0));
@@ -52,7 +53,7 @@ int _main(int argc, char *argv[])
             img->draw_keypoints(r.points, image::COLOR_RED, radius > 4 ? 4 : radius);
         }
         disp.show(*img);
-        delete result;
+        delete results;
         delete img;
         log::info("time: %d ms", time::ticks_ms() - t);
     }

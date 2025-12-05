@@ -1,14 +1,14 @@
 
 #include "maix_basic.hpp"
 #include "main.h"
-#include "maix_ntp.hpp"
+#include "maix_time.hpp"
 
 using namespace maix;
 
 int _main(int argc, char* argv[])
 {
     // auto t = maix::ext_dev::ntp::time_with_config("./ntp_config.yaml");
-    auto t = maix::ext_dev::ntp::sync_sys_time("ntp.tencent.com");
+    auto t = time::ntp_sync_sys_time("ntp.tencent.com");
     if (t.empty()) return -1;
 
     maix::log::info("\tNTP response : [ %04d-%02d-%02d %02d:%02d:%02d ]\n",

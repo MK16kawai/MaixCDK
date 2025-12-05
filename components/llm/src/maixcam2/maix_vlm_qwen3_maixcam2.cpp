@@ -2,7 +2,7 @@
  * LLM Qwen3VL implementation on MaixCam2
  * @license Apache-2.0
  * @author lxo@sipeed
- * @date 2025-011-24
+ * @date 2025-11-24
  */
 
 #include "maix_vlm_qwen3.hpp"

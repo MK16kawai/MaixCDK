@@ -9,7 +9,7 @@ endif()
 if(PLATFORM_MAIXCAM)
     list(APPEND ADD_INCLUDE "${src_path}/include")
 elseif(PLATFORM_MAIXCAM2)
-    list(APPEND ADD_INCLUDE "${src_path}/include/onnxruntime")
+    list(APPEND ADD_INCLUDE "${src_path}/include")
 endif()
 
 # list(APPEND ADD_PRIVATE_INCLUDE "include_private")

@@ -35,7 +35,7 @@ int main(int argc, char* argv[])
     // // support default maix communication protol commands
     // comm::add_default_comm_listener();
 
-    default key action
+    // default key action
     peripheral::key::add_default_listener();
 
     // Use CATCH_EXCEPTION_RUN_RETURN to catch exception,

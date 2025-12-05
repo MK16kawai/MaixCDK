@@ -2,6 +2,7 @@
 #include "maix_basic.hpp"
 #include "maix_nn_melotts.hpp"
 #include "main.h"
+#include "maix_image.hpp"
 #ifndef PLATFORM_MAIXCAM2
 #error "This demo only support maixcam2"
 #else

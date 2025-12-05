@@ -138,7 +138,6 @@ static int cmd_init(int argc, char* argv[])
     priv.method_list.push_back(image_method_t{"find_qrcode", test_find_qrcode});
     priv.method_list.push_back(image_method_t{"qrcode_detector", test_qrcode_detector});
     priv.method_list.push_back(image_method_t{"find_lines", test_find_lines});
-    priv.method_list.push_back(image_method_t{"ed lib", test_ed_lib});
     priv.method_list.push_back(image_method_t{"tracking line", test_tracking_line});
     priv.method_list.push_back(image_method_t{"find_barcode", test_find_barcode});
     priv.method_list.push_back(image_method_t{"to_format", test_to_format});

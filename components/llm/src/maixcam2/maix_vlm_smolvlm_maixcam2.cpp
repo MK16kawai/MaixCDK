@@ -1,8 +1,8 @@
 /**
  * LLM SmolVLM implementation on MaixCam2
  * @license Apache-2.0
- * @author neucrack@sipeed
- * @date 2025-06-03
+ * @author lxo@sipeed
+ * @date 2025-11-24
  */
 
  #include "maix_vlm_smolvlm.hpp"

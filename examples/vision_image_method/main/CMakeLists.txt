@@ -3,16 +3,6 @@ list(APPEND ADD_INCLUDE "include"
     )
 ###############################################
 
-# ed lib
-list(APPEND ADD_PRIVATE_INCLUDE "ed_lib/ED_Lib")
-list(APPEND ADD_SRCS  "ed_lib/ED_Lib/ED.cpp"
-                      "ed_lib/ED_Lib/EDCircles.cpp"
-                      "ed_lib/ED_Lib/EDColor.cpp"
-                      "ed_lib/ED_Lib/EDLines.cpp"
-                      "ed_lib/ED_Lib/EDPF.cpp"
-                      "ed_lib/ED_Lib/NFA.cpp"
-    )
-
 ############ Add source files #################
 # list(APPEND ADD_SRCS  "src/main.c"
 #                       "src/test.c"
