@@ -3,6 +3,7 @@
 #include "main.h"
 
 using namespace maix;
+#if defined PLATFORM_MAIXCAM || defined PLATFORM_MAIXCAM2
 /**
  * libdatachannel client example
  * Copyright (c) 2019-2020 Paul-Louis Ageneau
@@ -454,6 +455,12 @@ void addToStream(shared_ptr<Client> client, bool isAddingVideo) {
         startStream();
     }
 }
+#else
+int _main(int argc, char* argv[]) {
+    printf("This program is not supported on this platform.\r\n");
+    return 0;
+}
+#endif
 
 int main(int argc, char* argv[])
 {

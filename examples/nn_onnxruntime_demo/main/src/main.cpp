@@ -17,6 +17,7 @@
 #include <string>
 #include <list>
 
+#if defined PLATFORM_MAIXCAM  || defined PLATFORM_MAIXCAM2
 #include "frontend/feature_pipeline.h"
 #include "frontend/wav.h"
 #include "kws/keyword_spotting.h"
@@ -25,6 +26,7 @@
 #include "maix_audio.hpp"
 #include "maix_image.hpp"
 #include "maix_vision.hpp"
+
 #include "kaldi-native-fbank/csrc/online-feature.h"
 #include "kaldi-native-fbank/csrc/feature-fbank.h"
 #include "kaldi-native-fbank/csrc/feature-mfcc.h"
@@ -32,7 +34,6 @@
 #include "kaldi-native-fbank/csrc/mel-computations.h"
 
 using namespace maix;
-
 class FeatureComputer
 {
 	knf::OnlineFbank *_fbank;
@@ -336,3 +337,10 @@ int main(int argc, char* argv[]) {
 
 	return 0;
 }
+#else
+int main(int argc, char **argv)
+{
+	printf("This demo is only supported on maixcam/maixcam2\r\n");
+	return 0;
+}
+#endif

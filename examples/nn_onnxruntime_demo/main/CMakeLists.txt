@@ -1,8 +1,10 @@
 ############### Add include ###################
 list(APPEND ADD_INCLUDE "include"
     )
+if(PLATFORM_MAIXCAM OR PLATFORM_MAIXCAM2)
 list(APPEND ADD_PRIVATE_INCLUDE "core"
 )
+endif()
 
 ###############################################
 
@@ -10,10 +12,14 @@ list(APPEND ADD_PRIVATE_INCLUDE "core"
 # list(APPEND ADD_SRCS  "src/main.c"
 #                       "src/test.c"
 #     )
+if(PLATFORM_MAIXCAM OR PLATFORM_MAIXCAM2)
 append_srcs_dir(ADD_SRCS "src"
 "core/frontend"
 "core/kws"
 )       # append source file in src dir to var ADD_SRCS
+else()
+append_srcs_dir(ADD_SRCS "src")
+endif()
 
 # FILE(GLOB_RECURSE EXTRA_SRC  "src/*.c")
 # FILE(GLOB EXTRA_SRC  "src/*.c")
@@ -26,10 +32,10 @@ append_srcs_dir(ADD_SRCS "src"
 # SET_PROPERTY(SOURCE ${ADD_ASM_SRCS} PROPERTY LANGUAGE C) # set .S  ASM file as C language
 # SET_SOURCE_FILES_PROPERTIES(${ADD_ASM_SRCS} PROPERTIES COMPILE_FLAGS "-x assembler-with-cpp -D BBBBB")
 ###############################################
-
 ###### Add required/dependent components ######
-list(APPEND ADD_REQUIREMENTS basic vision onnxruntime kaldi-native-fbank)
-
+if(PLATFORM_MAIXCAM OR PLATFORM_MAIXCAM2)
+    list(APPEND ADD_REQUIREMENTS basic vision onnxruntime kaldi-native-fbank)
+endif()
 ###############################################
 
 ###### Add link search path for requirements/libs ######

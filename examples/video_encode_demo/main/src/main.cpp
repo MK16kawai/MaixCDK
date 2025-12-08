@@ -8,6 +8,8 @@
 #include "maix_camera.hpp"
 #include "list"
 using namespace maix;
+
+#if defined(PLATFORM_MAIXCAM) || defined(PLATFORM_MAIXCAM2)
 #if defined(PLATFORM_MAIXCAM2)
 #include "ax_middleware.hpp"
 using namespace maix::middleware;
@@ -665,6 +667,12 @@ int _main(int argc, char* argv[])
 
     return 0;
 }
+#else
+int _main(int argc, char* argv[]) {
+    printf("This program is not supported on this platform.\r\n");
+    return 0;
+}
+#endif
 
 int main(int argc, char* argv[])
 {

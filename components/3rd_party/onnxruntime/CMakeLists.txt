@@ -6,9 +6,7 @@ elseif(PLATFORM_MAIXCAM2)
 set(src_path "${onnxruntime_unzip_path}/maixcam2_onnxruntime_v${onnxruntime_version_str}")
 endif()
 ################# Add include #################
-if(PLATFORM_MAIXCAM)
-    list(APPEND ADD_INCLUDE "${src_path}/include")
-elseif(PLATFORM_MAIXCAM2)
+if(PLATFORM_MAIXCAM OR PLATFORM_MAIXCAM2)
     list(APPEND ADD_INCLUDE "${src_path}/include")
 endif()
 
@@ -30,9 +28,10 @@ endif()
 ###### Add link search path for requirements/libs ######
 # list(APPEND ADD_LINK_SEARCH_PATH "${CONFIG_TOOLCHAIN_PATH}/lib")
 # list(APPEND ADD_REQUIREMENTS m)  # add system libs, pthread or m(math) lib for example
+if(PLATFORM_MAIXCAM OR PLATFORM_MAIXCAM2)
 list(APPEND ADD_DYNAMIC_LIB "${src_path}/lib/libonnxruntime.so.1")
 list(APPEND ADD_DIST_LIB_IGNORE "${src_path}/lib/libonnxruntime.so.1")
-
+endif()
 ###############################################
 
 ############ Add static libs ##################
