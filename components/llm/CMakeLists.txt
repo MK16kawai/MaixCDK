@@ -10,7 +10,7 @@ if(PLATFORM_MAIXCAM2)
     append_srcs_dir(ADD_SRCS "src/maixcam2/utils")
     append_srcs_dir(ADD_SRCS "src/maixcam2/Tokenizer")
     append_srcs_dir(ADD_SRCS "src/maixcam2/ax_model_runner")
-    list(APPEND ADD_REQUIREMENTS json maixcam2_msp)
+    list(APPEND ADD_REQUIREMENTS json maixcam2_msp cpp-httplib)
 else()
     list(APPEND ADD_PRIVATE_INCLUDE "src/linux")
     append_srcs_dir(ADD_SRCS "src/linux")
@@ -64,8 +64,8 @@ register_component()
 ###############################################
 
 #### Add compile option for this component ####
-#### Just for this component, won't affect other 
-#### modules, including component that depend 
+#### Just for this component, won't affect other
+#### modules, including component that depend
 #### on this component
 # list(APPEND ADD_DEFINITIONS_PRIVATE -DAAAAA=1)
 
