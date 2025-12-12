@@ -9,13 +9,13 @@ menu "libdatachannel component configuration"
             default 0
         config LIBDATACHANNEL_VERSION_MINOR
             int "LIBDATACHANNEL version minor"
-            default 22 if PLATFORM = "maixcam"
-            default 22 if PLATFORM = "maixcam2"
-            default 22
+            default 24 if PLATFORM = "maixcam"
+            default 24 if PLATFORM = "maixcam2"
+            default 24
         config LIBDATACHANNEL_VERSION_PATCH
             int "LIBDATACHANNEL version patch"
-            default 4 if PLATFORM = "maixcam"
-            default 4 if PLATFORM = "maixcam2"
-            default 4
+            default 0 if PLATFORM = "maixcam"
+            default 0 if PLATFORM = "maixcam2"
+            default 0
     endmenu
 endmenu

@@ -49,17 +49,17 @@ list(APPEND ADD_REQUIREMENTS zbar omv qrcode)
 if(PLATFORM_LINUX)
     list(APPEND ADD_REQUIREMENTS sdl)
 elseif(PLATFORM_MAIXCAM)
-    list(APPEND ADD_REQUIREMENTS FFmpeg maixcam_lib RtspServer)
+    list(APPEND ADD_REQUIREMENTS FFmpeg maixcam_lib RtspServer libdatachannel)
     if(NOT CONFIG_MAIXCAM_LIB_COMPILE_FROM_SOURCE)
         set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--start-group vision/libvision.a -lmaixcam_lib -Wl,--end-group" PARENT_SCOPE)
         set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -Wl,--start-group vision/libvision.a -lmaixcam_lib -Wl,--end-group" PARENT_SCOPE)
     endif()
 elseif(PLATFORM_MAIXCAM2)
-list(APPEND ADD_REQUIREMENTS FFmpeg maixcam_lib RtspServer)
-if(NOT CONFIG_MAIXCAM_LIB_COMPILE_FROM_SOURCE)
-# set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--start-group vision/libvision.a -lmaixcam_lib -Wl,--end-group" PARENT_SCOPE)
-# set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -Wl,--start-group vision/libvision.a -lmaixcam_lib -Wl,--end-group" PARENT_SCOPE)
-endif()
+    list(APPEND ADD_REQUIREMENTS FFmpeg maixcam_lib RtspServer libdatachannel)
+    if(NOT CONFIG_MAIXCAM_LIB_COMPILE_FROM_SOURCE)
+        # set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--start-group vision/libvision.a -lmaixcam_lib -Wl,--end-group" PARENT_SCOPE)
+        # set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -Wl,--start-group vision/libvision.a -lmaixcam_lib -Wl,--end-group" PARENT_SCOPE)
+    endif()
 endif()
 list(APPEND ADD_REQUIREMENTS eigen voice)
 ###############################################
@@ -82,8 +82,8 @@ list(APPEND ADD_REQUIREMENTS eigen voice)
 ###############################################
 
 #### Add compile option for this component ####
-#### Just for this component, won't affect other 
-#### modules, including component that depend 
+#### Just for this component, won't affect other
+#### modules, including component that depend
 #### on this component
 # list(APPEND ADD_DEFINITIONS_PRIVATE -DAAAAA=1)
 

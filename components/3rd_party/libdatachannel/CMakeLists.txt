@@ -1,8 +1,7 @@
 set(libdatachannel_version_str "${CONFIG_LIBDATACHANNEL_VERSION_MAJOR}.${CONFIG_LIBDATACHANNEL_VERSION_MINOR}.${CONFIG_LIBDATACHANNEL_VERSION_PATCH}")
 set(srcs_path "${DL_EXTRACTED_PATH}/libdatachannel_srcs/libdatachannel-${libdatachannel_version_str}")
 ################# Add include #################
-list(APPEND ADD_INCLUDE "${srcs_path}/include"
-    )
+list(APPEND ADD_INCLUDE "${srcs_path}/include" ".")
 list(APPEND ADD_PRIVATE_INCLUDE "${srcs_path}/include/rtc" "${srcs_path}/src")
 ###############################################
 
@@ -17,7 +16,7 @@ aux_source_directory("${srcs_path}/src/impl" ADD_SRCS)
 ###############################################
 
 ###### Add required/dependent components ######
-list(APPEND ADD_REQUIREMENTS openssl json libjuice libsrtp plog usrsctp)
+list(APPEND ADD_REQUIREMENTS openssl json libjuice libsrtp plog usrsctp cpp-httplib)
 ###############################################
 
 ###### Add link search path for requirements/libs ######
@@ -38,10 +37,10 @@ list(APPEND ADD_REQUIREMENTS openssl json libjuice libsrtp plog usrsctp)
 ###############################################
 
 #### Add compile option for this component ####
-#### Just for this component, won't affect other 
-#### modules, including component that depend 
+#### Just for this component, won't affect other
+#### modules, including component that depend
 #### on this component
-list(APPEND ADD_DEFINITIONS_PRIVATE -DJUICE_STATIC -DRTC_ENABLE_MEDIA=1 -DRTC_ENABLE_WEBSOCKET=1 -DRTC_EXPORTS -DRTC_SYSTEM_JUICE=0 -DRTC_SYSTEM_SRTP=0 -DUSE_GNUTLS=0 -DUSE_NICE=0 -D_GNU_SOURCE -Ddatachannel_EXPORTS -w)
+list(APPEND ADD_DEFINITIONS_PRIVATE -DJUICE_STATIC -DRTC_ENABLE_MEDIA=1 -DRTC_ENABLE_WEBSOCKET=1 -DRTC_EXPORTS -DRTC_SYSTEM_JUICE=0 -DRTC_SYSTEM_SRTP=0 -DUSE_GNUTLS=0 -DUSE_NICE=0 -D_GNU_SOURCE -Ddatachannel_EXPORTS -DNDEBUG -w)
 
 #### Add compile option for this component
 #### Add components that depend on this component
