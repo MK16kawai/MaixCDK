@@ -18,4 +18,10 @@ menu "libdatachannel component configuration"
             default 0 if PLATFORM = "maixcam2"
             default 0
     endmenu
+
+    config LIBDATACHANNEL_COMPILE_FROM_SOURCE
+      bool "compile libdatachannel from souce code"
+      default n
+      help
+        compile libdatachannel from source code, or use dynamic libs
 endmenu

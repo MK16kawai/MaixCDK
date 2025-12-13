@@ -50,8 +50,8 @@
 ###############################################
 
 #### Add compile option for this component ####
-#### Just for this component, won't affect other 
-#### modules, including component that depend 
+#### Just for this component, won't affect other
+#### modules, including component that depend
 #### on this component
 # list(APPEND ADD_DEFINITIONS_PRIVATE -DAAAAA=1)
 
@@ -66,15 +66,13 @@
 # set(CMAKE_C_LINK_FLAGS "${CMAKE_C_LINK_FLAGS} -Wl,--start-group libmaix/libtest.a -ltest2 -Wl,--end-group" PARENT_SCOPE)
 ###############################################
 
-if(PLATFORM_LINUX)
-    set(compile_from_src 0)
-else()
-    set(compile_from_src 1)
-endif()
+set(compile_from_src 0)
+
 if(CONFIG_OPENSSL_COMPILE_FROM_SOURCE)
     set(compile_from_src 1)
 endif()
 
+set(openssl_src_path "${DL_EXTRACTED_PATH}/openssl/openssl-3.0.12")
 if(compile_from_src)
     if(NOT ADD_INCLUDE) # compile from source code
         execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpmachine OUTPUT_VARIABLE arch)
@@ -100,7 +98,6 @@ if(compile_from_src)
         set_property(SOURCE ${target_h_path} PROPERTY GENERATED 1)
         set_property(SOURCE ${target_lib_file} PROPERTY GENERATED 1)
 
-        set(openssl_src_path "${DL_EXTRACTED_PATH}/openssl/openssl-3.0.12")
         set(openssl_install_path "${target_install_dir}")
         set(openssl_compile_cmd COMMAND set -x && cd ${openssl_src_path} && echo "-- compile openssl now" && make distclean || true && chmod +x ./Configure && ./Configure linux-generic32 shared  -DL_ENDIAN --openssldir=${openssl_install_path} --prefix=${openssl_install_path} && export PATH=${CONFIG_TOOLCHAIN_PATH}:$ENV{PATH} &&  make CC="${host_prefix}"gcc RANLIB="${host_prefix}"ranlib LD="${host_prefix}"ld MAKEDEPPROG="${host_prefix}"gcc PROCESSOR=${arch} -j`nproc` && make install_sw)
 
@@ -111,7 +108,15 @@ if(compile_from_src)
         list(APPEND ADD_FILE_DEPENDS ${target_h_path})
     endif()
 else()
-    list(APPEND ADD_REQUIREMENTS openssl)
+    if(PLATFORM_MAIXCAM)
+        list(APPEND ADD_INCLUDE "include")
+        list(APPEND ADD_DYNAMIC_LIB "so/maixcam/libssl.so.3" "so/maixcam/libcrypto.so.3")
+    elseif(PLATFORM_MAIXCAM2)
+        list(APPEND ADD_INCLUDE "include")
+        list(APPEND ADD_DYNAMIC_LIB "so/maixcam2/libssl.so.3" "so/maixcam2/libcrypto.so.3")
+    else()
+        list(APPEND ADD_REQUIREMENTS openssl)
+    endif()
 endif()
 
 # register component, DYNAMIC or SHARED flags will make component compiled to dynamic(shared) lib
