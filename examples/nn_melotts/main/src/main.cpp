@@ -21,13 +21,13 @@ int _main(int argc, char *argv[])
 
     std::string model_path = argv[1];
     std::string text = argv[2];
-    std::string wav_path = argc < 3 ? "output.wav" : argv[3];
-    std::string language = argc < 4 ? "zh" : argv[4];
-    double speed = argc < 5 ? 0.8f : std::stof(argv[5]);
-    double noise_scale = argc < 6 ? 0.3f : std::stof(argv[6]);
-    double noise_scale_w = argc < 7 ? 0.6f : std::stof(argv[7]);
-    double sdp_ratio = argc < 8 ? 0.2f : std::stof(argv[8]);
-    bool output_pcm = argc < 9 ? false : std::stoi(argv[9]);
+    std::string wav_path = argc <= 3 ? "output.wav" : argv[3];
+    std::string language = argc <= 4 ? "zh" : argv[4];
+    double speed = argc <= 5 ? 0.8f : std::stof(argv[5]);
+    double noise_scale = argc <= 6 ? 0.3f : std::stof(argv[6]);
+    double noise_scale_w = argc <= 7 ? 0.6f : std::stof(argv[7]);
+    double sdp_ratio = argc <= 8 ? 0.2f : std::stof(argv[8]);
+    bool output_pcm = argc <= 9 ? false : std::stoi(argv[9]);
 
     log::info("model path: %s", model_path.c_str());
     log::info("text: %s", text.c_str());
