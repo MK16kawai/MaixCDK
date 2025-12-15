@@ -4,6 +4,8 @@ def add_file_downloads(confs : dict) -> list:
         @param confs kconfig vars, dict type
         @return list type, items is dict type
     '''
+    if 'CONFIG_LIBDATACHANNEL_COMPILE_FROM_SOURCE' not in confs:
+        return []
     version = f"{confs['CONFIG_LIBDATACHANNEL_VERSION_MAJOR']}.{confs['CONFIG_LIBDATACHANNEL_VERSION_MINOR']}.{confs['CONFIG_LIBDATACHANNEL_VERSION_PATCH']}"
     url = f"https://github.com/paullouisageneau/libdatachannel/archive/refs/tags/v{version}.tar.gz"
     if version == "0.24.0":
