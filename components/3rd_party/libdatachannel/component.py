@@ -6,8 +6,8 @@ def add_file_downloads(confs : dict) -> list:
     '''
     version = f"{confs['CONFIG_LIBDATACHANNEL_VERSION_MAJOR']}.{confs['CONFIG_LIBDATACHANNEL_VERSION_MINOR']}.{confs['CONFIG_LIBDATACHANNEL_VERSION_PATCH']}"
     url = f"https://github.com/paullouisageneau/libdatachannel/archive/refs/tags/v{version}.tar.gz"
-    if version == "0.22.4":
-        sha256sum = "43eff11d71382aa1e0249aed9729cd744fa91e5cf2410364efa37e006a620454"
+    if version == "0.24.0":
+        sha256sum = "62a4d1fb43df73549bbed9d82161d2bf8b1396bee2a50759b9d8a8d03e62ab12"
     else:
         raise Exception(f"version {version} not support")
     sites = ["https://github.com/paullouisageneau/libdatachannel"]
