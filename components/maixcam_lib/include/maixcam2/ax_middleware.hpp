@@ -59,6 +59,14 @@ namespace maix::middleware::maixcam2 {
         AX_VENC_TYPE_MJPG,
     } ax_venc_type_e;
 
+    typedef enum
+    {
+        AX_VENC_RCMODE_CBR = 0,
+        AX_VENC_RCMODE_VBR,
+        AX_VENC_RCMODE_FIXQP,
+        AX_VENC_RCMODE_MAX,
+    } ax_venc_rc_mode_e;
+
     typedef enum {
         AX_VDEC_TYPE_JPG = 0,
         AX_VDEC_TYPE_H264,
@@ -89,6 +97,7 @@ namespace maix::middleware::maixcam2 {
     typedef struct {
         bool en;
         ax_venc_type_e type;
+        ax_venc_rc_mode_e rc_mode;
         int w;
         int h;
         AX_IMG_FORMAT_E fmt;

@@ -34,17 +34,15 @@ namespace maix::webrtc
         return err::ERR_NOT_IMPL;
     }
 
-    WebRTC::WebRTC(std::string ip, int port, int fps,
-                   webrtc::WebRTCStreamType stream_type, int bitrate, int gop,
-                   std::string signaling_ip, int signaling_port,
-                   const std::string &stun_server,
-                   bool http_server)
+    WebRTC::WebRTC(std::string ip, int port, webrtc::WebRTCStreamType stream_type,
+                   webrtc::WebRTCRCType rc_type, int bitrate, int gop, std::string signaling_ip,
+                   int signaling_port, const std::string &stun_server, bool http_server)
     {
         (void)ip;
         (void)port;
-        (void)fps;
         (void)gop;
         (void)stream_type;
+        (void)rc_type;
         (void)bitrate;
         (void)signaling_ip;
         (void)signaling_port;

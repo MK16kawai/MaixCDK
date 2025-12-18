@@ -165,7 +165,6 @@ namespace maix::webrtc
         bool bind_audio_recorder;
 
         int encoder_bitrate;
-        int fps;
         int gop;
 
         MaixWebRTCServer *webrtc_server;
@@ -257,20 +256,37 @@ namespace maix::webrtc
         param->status = WEBRTC_IDLE;
     }
 
-    WebRTC::WebRTC(std::string ip, int port, int fps,
-                   webrtc::WebRTCStreamType stream_type, int bitrate, int gop,
-                   std::string signaling_ip, int signaling_port,
-                   const std::string &stun_server,
-                   bool http_server)
+    static video::VideoType get_video_type( maix::webrtc::WebRTCStreamType stream, maix::webrtc::WebRTCRCType rc)
+    {
+        using stream_type = maix::webrtc::WebRTCStreamType;
+        using rc_type = maix::webrtc::WebRTCRCType;
+
+        if (stream == stream_type::WEBRTC_STREAM_H264) {
+            if (rc == rc_type::WEBRTC_RC_CBR) { return video::VIDEO_H264_CBR; }
+            if (rc == rc_type::WEBRTC_RC_VBR) { return video::VIDEO_H264_VBR; }
+        }
+
+        if (stream == stream_type::WEBRTC_STREAM_H265) {
+            if (rc == rc_type::WEBRTC_RC_CBR) { return video::VIDEO_H265_CBR; }
+            if (rc == rc_type::WEBRTC_RC_VBR) { return video::VIDEO_H265_VBR; }
+        }
+
+        log::error("Unsupported video type stream=%d rc=%d", (int)stream, (int)rc);
+        return video::VIDEO_H264_CBR;
+    }
+
+    WebRTC::WebRTC(std::string ip, int port, webrtc::WebRTCStreamType stream_type,
+                   webrtc::WebRTCRCType rc_type, int bitrate, int gop, std::string signaling_ip,
+                   int signaling_port, const std::string &stun_server, bool http_server)
     {
         this->_ip = ip.size() ? ip : "0.0.0.0";
         this->_port = port;
         this->_signaling_ip = signaling_ip;
         this->_signaling_port = signaling_port;
         this->_stun_server = stun_server;
-        this->_fps = fps;
         this->_gop = gop;
         this->_stream_type = stream_type;
+        this->_rc_type = rc_type;
         this->_is_start = false;
         this->_video_thread = nullptr;
         this->_http_server = http_server;
@@ -292,7 +308,6 @@ namespace maix::webrtc
         param->bind_camera = false;
         param->bind_audio_recorder = false;
         param->encoder_bitrate = bitrate;
-        param->fps = fps;
         param->gop = gop;
 
         param->webrtc_server = nullptr;
@@ -353,17 +368,9 @@ namespace maix::webrtc
             param->encoder = nullptr;
         }
 
-        video::VideoType video_type;
-        if (this->_stream_type == maix::webrtc::WebRTCStreamType::WEBRTC_STREAM_H264) {
-            video_type = video::VIDEO_H264;
-        } else if (this->_stream_type == maix::webrtc::WebRTCStreamType::WEBRTC_STREAM_H265) {
-            video_type = video::VIDEO_H265;
-        } else {
-            log::error("Unsupported stream type: %d", this->_stream_type);
-            return err::ERR_ARGS;
-        }
+        video::VideoType video_type = get_video_type(this->_stream_type, this->_rc_type);
 
-        param->encoder = new video::Encoder("", param->camera->width(), param->camera->height(), image::Format::FMT_YVU420SP, video_type, param->fps, param->gop, param->encoder_bitrate);
+        param->encoder = new video::Encoder("", param->camera->width(), param->camera->height(), image::Format::FMT_YVU420SP, video_type, param->camera->fps(), param->gop, param->encoder_bitrate);
         err::check_null_raise(param->encoder, "Create video encoder failed!");
 
         if (param->bind_audio_recorder) {
@@ -376,7 +383,7 @@ namespace maix::webrtc
         }
 
         MaixWebRTCServerBuilder builder;
-        builder.set_ice_server("stun:stun.l.google.com:19302");
+        builder.set_ice_server(this->_stun_server);
 
         if (this->_stream_type == maix::webrtc::WebRTCStreamType::WEBRTC_STREAM_H265) {
             builder.set_video_codec(VideoCodec::H265);
@@ -539,6 +546,9 @@ namespace maix::webrtc
                 ip_list.push_back("http://" + std::string(new_ip) + ":" + std::to_string(port));
             }
             if (!get_ip((char *)"wlan0", new_ip)) {
+                ip_list.push_back("http://" + std::string(new_ip) + ":" + std::to_string(port));
+            }
+            if (!get_ip((char *)"tailscale0", new_ip)) {
                 ip_list.push_back("http://" + std::string(new_ip) + ":" + std::to_string(port));
             }
         } else {
