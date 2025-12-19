@@ -31,16 +31,15 @@ namespace maix::video
         VIDEO_ENC_MP4_CBR,      // Deprecated
         VIDEO_DEC_H265_CBR,     // Deprecated
         VIDEO_DEC_MP4_CBR,      // Deprecated
-        VIDEO_H264_CBR,         // Deprecated
-        VIDEO_H265_CBR,         // Deprecated
         VIDEO_H264_CBR_MP4,     // Deprecated
         VIDEO_H265_CBR_MP4,     // Deprecated
 
         VIDEO_H264,
-        VIDEO_H264_MP4,
-        VIDEO_H264_FLV,
+        VIDEO_H264_CBR,
+        VIDEO_H264_VBR,
         VIDEO_H265,
-        VIDEO_H265_MP4,
+        VIDEO_H265_CBR,
+        VIDEO_H265_VBR,
     };
 
     /**

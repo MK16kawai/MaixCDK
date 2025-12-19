@@ -81,19 +81,46 @@ namespace maix::video
         }
 
         if (!strcmp(suffix, ".h264")) {
-            video_type = video::VIDEO_H264;
+            switch (type) {
+            case video::VIDEO_H264:         // fall through
+            case video::VIDEO_H264_CBR:
+                video_type = video::VIDEO_H264_CBR;
+                break;
+            case video::VIDEO_H264_VBR:
+                video_type = video::VIDEO_H264_VBR;
+                break;
+            default:
+                err::check_raise(err::ERR_RUNTIME, "Unsupported video type!");
+                break;
+            }
         } else if (!strcmp(suffix, ".h265")) {
-            video_type = video::VIDEO_H265;
+            switch (type) {
+            case video::VIDEO_H265:         // fall through
+            case video::VIDEO_H265_CBR:
+                video_type = video::VIDEO_H265_CBR;
+                break;
+            case video::VIDEO_H265_VBR:
+                video_type = video::VIDEO_H265_VBR;
+                break;
+            default:
+                err::check_raise(err::ERR_RUNTIME, "Unsupported video type!");
+                break;
+            }
         } else if (!strcmp(suffix, ".mp4")) {
             switch (type) {
             case video::VIDEO_H264:         // fall through
-            case video::VIDEO_H264_MP4:     // fall through
-            case video::VIDEO_H264_FLV:
-                video_type = video::VIDEO_H264_MP4;
+            case video::VIDEO_H264_CBR:
+                video_type = video::VIDEO_H264_CBR;
+                break;
+            case video::VIDEO_H264_VBR:
+                video_type = video::VIDEO_H264_VBR;
                 break;
             case video::VIDEO_H265:         // fall through
-            case video::VIDEO_H265_MP4:
-                video_type = video::VIDEO_H265_MP4;
+            case video::VIDEO_H265_CBR:
+                video_type = video::VIDEO_H265_CBR;
+                break;
+            case video::VIDEO_H265_VBR:
+                video_type = video::VIDEO_H265_VBR;
                 break;
             default:
                 err::check_raise(err::ERR_RUNTIME, "Unsupported video type!");
@@ -102,8 +129,11 @@ namespace maix::video
         } else if (!strcmp(suffix, ".flv")) {
             switch (type) {
             case video::VIDEO_H264:         // fall through
-            case video::VIDEO_H264_FLV:
-                video_type = video::VIDEO_H264_FLV;
+            case video::VIDEO_H264_CBR:
+                video_type = video::VIDEO_H264_CBR;
+                break;
+            case video::VIDEO_H264_VBR:
+                video_type = video::VIDEO_H264_VBR;
                 break;
             default:
                 err::check_raise(err::ERR_RUNTIME, "Unsupported video type!");
@@ -120,12 +150,13 @@ namespace maix::video
         enum AVCodecID codec_id = AV_CODEC_ID_NONE;
         switch (video_type) {
             case VIDEO_H264:
-            case VIDEO_H264_MP4:
-            case VIDEO_H264_FLV:
+            case VIDEO_H264_CBR:
+            case VIDEO_H264_VBR:
                 codec_id = AV_CODEC_ID_H264;
                break;
             case VIDEO_H265:
-            case VIDEO_H265_MP4:
+            case VIDEO_H265_CBR:
+            case VIDEO_H265_VBR:
                 codec_id = AV_CODEC_ID_HEVC;
                 break;
             default:
@@ -313,21 +344,24 @@ namespace maix::video
         param->frame_index = 0;
         param->last_encode_ms = time::ticks_ms();
         param->video_packet_list = new std::list<AVPacket *>;
+
+        bool is_raw_h264 = _path.find(".h264") != std::string::npos;
+        bool is_raw_h265 = _path.find(".h265") != std::string::npos;
+
         switch (video_type) {
             case VIDEO_H264:
                 param->copy_sps_pps_per_iframe = true;
                 break;
-            case VIDEO_H264_MP4:
-                param->copy_sps_pps_per_iframe = false;
+            case VIDEO_H264_CBR:
+            case VIDEO_H264_VBR:
+                param->copy_sps_pps_per_iframe = is_raw_h264 ? true : false;
                 break;
-            case VIDEO_H264_FLV:
-                param->copy_sps_pps_per_iframe = false;
-            break;
             case VIDEO_H265:
                 param->copy_sps_pps_per_iframe = true;
                 break;
-            case VIDEO_H265_MP4:
-                param->copy_sps_pps_per_iframe = false;
+            case VIDEO_H265_CBR:
+            case VIDEO_H265_VBR:
+                param->copy_sps_pps_per_iframe = is_raw_h265 ? true : false;
                 break;
             default:
                 err::check_raise(err::ERR_RUNTIME, "Unsupported video type!");
@@ -336,12 +370,12 @@ namespace maix::video
         maixcam2::ax_venc_param_t cfg = {0};
         switch (video_type) {
             case VIDEO_H264:
-            case VIDEO_H264_MP4:
-            case VIDEO_H264_FLV:
+            case VIDEO_H264_CBR:
                 cfg.w = width;
                 cfg.h = height;
                 cfg.fmt = maixcam2::get_ax_fmt_from_maix(format);
                 cfg.type = maixcam2::AX_VENC_TYPE_H264;
+                cfg.rc_mode = maixcam2::AX_VENC_RCMODE_CBR;
                 cfg.h264.bitrate = bitrate / 1000;
                 cfg.h264.input_fps = framerate;
                 cfg.h264.output_fps = framerate;
@@ -356,12 +390,31 @@ namespace maix::video
                 cfg.h264.max_iprop = 40;
                 cfg.h264.first_frame_start_qp = -1;
                 break;
+            case VIDEO_H264_VBR:
+                cfg.w = width;
+                cfg.h = height;
+                cfg.fmt = maixcam2::get_ax_fmt_from_maix(format);
+                cfg.type = maixcam2::AX_VENC_TYPE_H264;
+                cfg.rc_mode = maixcam2::AX_VENC_RCMODE_VBR;
+                cfg.h264.bitrate = bitrate / 1000;
+                cfg.h264.input_fps = framerate;
+                cfg.h264.output_fps = framerate;
+                cfg.h264.gop = gop;
+                cfg.h264.intra_qp_delta = -2;
+                cfg.h264.de_breath_qp_delta = -2;
+                cfg.h264.min_qp = 31;
+                cfg.h264.max_qp = 46;
+                cfg.h264.min_iqp = 31;
+                cfg.h264.max_iqp = 46;
+                cfg.h264.first_frame_start_qp = -1;
+                break;
             case VIDEO_H265:
-            case VIDEO_H265_MP4:
+            case VIDEO_H265_CBR:
                 cfg.w = width;
                 cfg.h = height;
                 cfg.fmt = maixcam2::get_ax_fmt_from_maix(format);
                 cfg.type = maixcam2::AX_VENC_TYPE_H265;
+                cfg.rc_mode = maixcam2::AX_VENC_RCMODE_CBR;
                 cfg.h265.bitrate = bitrate / 1000;
                 cfg.h265.input_fps = framerate;
                 cfg.h265.output_fps = framerate;
@@ -376,10 +429,25 @@ namespace maix::video
                 cfg.h265.max_iprop = 40;
                 cfg.h265.first_frame_start_qp = -1;
                 cfg.h265.qp_delta_rgn = 10;
-                cfg.h265.qp_map_type = AX_VENC_QPMAP_QP_DISABLE;
-                cfg.h265.qp_map_blk_type = AX_VENC_QPMAP_BLOCK_DISABLE;
-                cfg.h265.qp_map_block_unit = AX_VENC_QPMAP_BLOCK_UNIT_64x64;
-                cfg.h265.ctb_rc_mode = AX_VENC_RC_CTBRC_DISABLE;
+                break;
+            case VIDEO_H265_VBR:
+                cfg.w = width;
+                cfg.h = height;
+                cfg.fmt = maixcam2::get_ax_fmt_from_maix(format);
+                cfg.rc_mode = maixcam2::AX_VENC_RCMODE_VBR;
+                cfg.type = maixcam2::AX_VENC_TYPE_H265;
+                cfg.h265.bitrate = bitrate / 1000;
+                cfg.h265.input_fps = framerate;
+                cfg.h265.output_fps = framerate;
+                cfg.h265.gop = gop;
+                cfg.h265.intra_qp_delta = -2;
+                cfg.h265.de_breath_qp_delta = -2;
+                cfg.h265.min_qp = 31;
+                cfg.h265.max_qp = 46;
+                cfg.h265.min_iqp = 31;
+                cfg.h265.max_iqp = 46;
+                cfg.h265.first_frame_start_qp = -1;
+                cfg.h265.qp_delta_rgn = 10;
                 break;
             default:
                 err::check_raise(err::ERR_RUNTIME, "unsupport stream type!");
@@ -2050,10 +2118,12 @@ __vdec_exit:
             ::close(this->_fd);
 
             switch (this->_video_type) {
-            case VIDEO_ENC_H265_CBR:
+            case VIDEO_H265_CBR:
+            case VIDEO_H265_VBR:
                 // do nothing
                 break;
-            case VIDEO_ENC_MP4_CBR:
+            case VIDEO_H264_CBR:
+            case VIDEO_H264_VBR:
             {
                 char cmd[128];
                 snprintf(cmd, sizeof(cmd), "ffmpeg -loglevel quiet -i %s -c:v copy -c:a copy %s -y", this->_tmp_path.c_str(), this->_path.c_str());

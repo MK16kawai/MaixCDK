@@ -29,6 +29,17 @@ namespace maix::webrtc
     };
 
     /**
+     * The rc type of webrtc
+     * @maixpy maix.webrtc.WebRTCRCType
+     */
+    enum class WebRTCRCType
+    {
+        WEBRTC_RC_NONE = 0,  // format invalid
+        WEBRTC_RC_CBR,
+        WEBRTC_RC_VBR,
+    };
+
+    /**
      * Region class
      * @maixpy maix.webrtc.Region
      */
@@ -86,18 +97,20 @@ namespace maix::webrtc
          * @brief Construct a new WebRTC object
          * @param ip listen ip
          * @param port listen port
-         * @param fps video fps
          * @param stream_type stream type
+         * @param rc_type rc type
          * @param bitrate video bitrate
+         * @param gop video gop
          * @param signaling_ip signaling server bind ip
          * @param signaling_port signaling server bind port
-         * @param http_server whether to enable the HTTP server
          * @param stun_server STUN server address
+         * @param http_server whether to enable the HTTP server
          * @maixpy maix.webrtc.WebRTC.__init__
          * @maixcdk maix.webrtc.WebRTC.WebRTC
          */
-        WebRTC(std::string ip = std::string(), int port = 8000, int fps = 60,
+        WebRTC(std::string ip = std::string(), int port = 8000,
                webrtc::WebRTCStreamType stream_type = webrtc::WebRTCStreamType::WEBRTC_STREAM_H264,
+               webrtc::WebRTCRCType rc_type = webrtc::WebRTCRCType::WEBRTC_RC_CBR,
                int bitrate = 3000 * 1000, int gop = 60, std::string signaling_ip = std::string(),
                int signaling_port = 8001, const std::string &stun_server = "stun:stun.l.google.com:19302",
                bool http_server = true);
@@ -250,9 +263,9 @@ namespace maix::webrtc
         int _port;
         std::string _signaling_ip;
         int _signaling_port;
-        int _fps;
         int _gop;
         webrtc::WebRTCStreamType _stream_type;
+        webrtc::WebRTCRCType _rc_type;
         bool _is_start;
         thread::Thread *_video_thread;
         std::string _stun_server;

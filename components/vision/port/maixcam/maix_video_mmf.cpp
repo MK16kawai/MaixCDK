@@ -56,19 +56,46 @@ namespace maix::video
         }
 
         if (!strcmp(suffix, ".h264")) {
-            video_type = video::VIDEO_H264;
+            switch (type) {
+            case video::VIDEO_H264:         // fall through
+            case video::VIDEO_H264_CBR:
+                video_type = video::VIDEO_H264_CBR;
+                break;
+            case video::VIDEO_H264_VBR:
+                video_type = video::VIDEO_H264_VBR;
+                break;
+            default:
+                err::check_raise(err::ERR_RUNTIME, "Unsupported video type!");
+                break;
+            }
         } else if (!strcmp(suffix, ".h265")) {
-            video_type = video::VIDEO_H264;
+            switch (type) {
+            case video::VIDEO_H265:         // fall through
+            case video::VIDEO_H265_CBR:
+                video_type = video::VIDEO_H265_CBR;
+                break;
+            case video::VIDEO_H265_VBR:
+                video_type = video::VIDEO_H265_VBR;
+                break;
+            default:
+                err::check_raise(err::ERR_RUNTIME, "Unsupported video type!");
+                break;
+            }
         } else if (!strcmp(suffix, ".mp4")) {
             switch (type) {
             case video::VIDEO_H264:         // fall through
-            case video::VIDEO_H264_MP4:     // fall through
-            case video::VIDEO_H264_FLV:
-                video_type = video::VIDEO_H264_MP4;
+            case video::VIDEO_H264_CBR:
+                video_type = video::VIDEO_H264_CBR;
+                break;
+            case video::VIDEO_H264_VBR:
+                video_type = video::VIDEO_H264_VBR;
                 break;
             case video::VIDEO_H265:         // fall through
-            case video::VIDEO_H265_MP4:
-                video_type = video::VIDEO_H265_MP4;
+            case video::VIDEO_H265_CBR:
+                video_type = video::VIDEO_H265_CBR;
+                break;
+            case video::VIDEO_H265_VBR:
+                video_type = video::VIDEO_H265_VBR;
                 break;
             default:
                 err::check_raise(err::ERR_RUNTIME, "Unsupported video type!");
@@ -77,8 +104,11 @@ namespace maix::video
         } else if (!strcmp(suffix, ".flv")) {
             switch (type) {
             case video::VIDEO_H264:         // fall through
-            case video::VIDEO_H264_FLV:
-                video_type = video::VIDEO_H264_FLV;
+            case video::VIDEO_H264_CBR:
+                video_type = video::VIDEO_H264_CBR;
+                break;
+            case video::VIDEO_H264_VBR:
+                video_type = video::VIDEO_H264_VBR;
                 break;
             default:
                 err::check_raise(err::ERR_RUNTIME, "Unsupported video type!");
@@ -94,12 +124,13 @@ namespace maix::video
         PAYLOAD_TYPE_E payload_type = PT_H264;
         switch (video_type) {
             case VIDEO_H264:
-            case VIDEO_H264_MP4:
-            case VIDEO_H264_FLV:
+            case VIDEO_H264_CBR:
+            case VIDEO_H264_VBR:
                 payload_type = PT_H264;
                 break;
             case VIDEO_H265:
-            case VIDEO_H265_MP4:
+            case VIDEO_H265_CBR:
+            case VIDEO_H265_VBR:
                 payload_type = PT_H265;
                 break;
             default:
@@ -112,12 +143,13 @@ namespace maix::video
         enum AVCodecID codec_id = AV_CODEC_ID_NONE;
         switch (video_type) {
             case VIDEO_H264:
-            case VIDEO_H264_MP4:
-            case VIDEO_H264_FLV:
+            case VIDEO_H264_CBR:
+            case VIDEO_H264_VBR:
                 codec_id = AV_CODEC_ID_H264;
                break;
             case VIDEO_H265:
-            case VIDEO_H265_MP4:
+            case VIDEO_H265_CBR:
+            case VIDEO_H265_VBR:
                 codec_id = AV_CODEC_ID_HEVC;
                 break;
             default:
@@ -247,6 +279,8 @@ namespace maix::video
         if (_path.size() == 0) {
             switch (_type) {
             case VIDEO_H264:
+            case VIDEO_H264_CBR:
+            case VIDEO_H264_VBR:
             {
                 mmf_venc_cfg_t cfg = {
                     .type = 2,  //1, h265, 2, h264
@@ -258,7 +292,19 @@ namespace maix::video
                     .intput_fps = _framerate,
                     .output_fps = _framerate,
                     .bitrate = _bitrate / 1000,
+                    .rc_mode = MMF_VENC_RCMODE_CBR,
                 };
+
+                switch (_type) {
+                    case VIDEO_H264_CBR:
+                        cfg.rc_mode = MMF_VENC_RCMODE_CBR;
+                        break;
+                    case VIDEO_H264_VBR:
+                        cfg.rc_mode = MMF_VENC_RCMODE_VBR;
+                        break;
+                    default:
+                        break;
+                }
 
                 if (0 != mmf_init_v2(true)) {
                     err::check_raise(err::ERR_RUNTIME, "init mmf failed!");
@@ -271,6 +317,8 @@ namespace maix::video
                 break;
             }
             case VIDEO_H265:
+            case VIDEO_H265_CBR:
+            case VIDEO_H265_VBR:
             {
                 mmf_venc_cfg_t cfg = {
                     .type = 1,  //1, h265, 2, h264
@@ -282,7 +330,19 @@ namespace maix::video
                     .intput_fps = _framerate,
                     .output_fps = _framerate,
                     .bitrate = _bitrate / 1000,
+                    .rc_mode = MMF_VENC_RCMODE_CBR,
                 };
+
+                switch (_type) {
+                    case VIDEO_H265_CBR:
+                        cfg.rc_mode = MMF_VENC_RCMODE_CBR;
+                        break;
+                    case VIDEO_H265_VBR:
+                        cfg.rc_mode = MMF_VENC_RCMODE_VBR;
+                        break;
+                    default:
+                        break;
+                }
 
                 if (0 != mmf_init_v2(true)) {
                     err::check_raise(err::ERR_RUNTIME, "init mmf failed!");
@@ -344,11 +404,30 @@ namespace maix::video
                 .intput_fps = _framerate,
                 .output_fps = _framerate,
                 .bitrate = _bitrate / 1000,
+                .rc_mode = MMF_VENC_RCMODE_CBR,
             };
+
             if (venc_type == PT_H265) {
                 cfg.type = 1;
             } else if (venc_type == PT_H264) {
                 cfg.type = 2;
+            }
+
+            switch (type) {
+                case VIDEO_H264_CBR:
+                    cfg.rc_mode = MMF_VENC_RCMODE_CBR;
+                    break;
+                case VIDEO_H264_VBR:
+                    cfg.rc_mode = MMF_VENC_RCMODE_VBR;
+                    break;
+                case VIDEO_H265_CBR:
+                    cfg.rc_mode = MMF_VENC_RCMODE_CBR;
+                    break;
+                case VIDEO_H265_VBR:
+                    cfg.rc_mode = MMF_VENC_RCMODE_VBR;
+                    break;
+                default:
+                    break;
             }
 
             if (0 != mmf_init_v2(true)) {
@@ -368,46 +447,48 @@ namespace maix::video
             SwrContext *swr_ctx = NULL;
             AVPacket *audio_packet = NULL;
 
-            audio_packet = av_packet_alloc();
-            err::check_null_raise(audio_packet, "av_packet_alloc");
-            audio_packet->data = NULL;
-            audio_packet->size = 0;
+            if (_path.size() == 0) {
+                audio_packet = av_packet_alloc();
+                err::check_null_raise(audio_packet, "av_packet_alloc");
+                audio_packet->data = NULL;
+                audio_packet->size = 0;
 
-            int sample_rate = 48000;
-            int channels = 1;
-            int bitrate = 128000;
-            enum AVSampleFormat format = AV_SAMPLE_FMT_S16;
-            err::check_null_raise(audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC), "Could not find aac encoder");
-            err::check_null_raise(audio_stream = avformat_new_stream(outputFormatContext, NULL), "Could not allocate stream");
-            err::check_null_raise(audio_codec_ctx = avcodec_alloc_context3(audio_codec), "Could not allocate audio codec context");
-            audio_codec_ctx->codec_id = AV_CODEC_ID_AAC;
-            audio_codec_ctx->codec_type = AVMEDIA_TYPE_AUDIO;
-            audio_codec_ctx->sample_rate = sample_rate;
-            audio_codec_ctx->channels = channels;
-            audio_codec_ctx->channel_layout = av_get_default_channel_layout(audio_codec_ctx->channels);
-            audio_codec_ctx->sample_fmt = AV_SAMPLE_FMT_FLTP;  // AAC编码需要浮点格式
-            audio_codec_ctx->time_base = (AVRational){1, sample_rate};
-            audio_codec_ctx->bit_rate = bitrate;
-            audio_stream->time_base = audio_codec_ctx->time_base;
-            err::check_bool_raise(avcodec_parameters_from_context(audio_stream->codecpar, audio_codec_ctx) >= 0, "avcodec_parameters_to_context");
-            err::check_bool_raise(avcodec_open2(audio_codec_ctx, audio_codec, NULL) >= 0, "audio_codec open failed");
+                int sample_rate = 48000;
+                int channels = 1;
+                int bitrate = 128000;
+                enum AVSampleFormat format = AV_SAMPLE_FMT_S16;
+                err::check_null_raise(audio_codec = avcodec_find_encoder(AV_CODEC_ID_AAC), "Could not find aac encoder");
+                err::check_null_raise(audio_stream = avformat_new_stream(outputFormatContext, NULL), "Could not allocate stream");
+                err::check_null_raise(audio_codec_ctx = avcodec_alloc_context3(audio_codec), "Could not allocate audio codec context");
+                audio_codec_ctx->codec_id = AV_CODEC_ID_AAC;
+                audio_codec_ctx->codec_type = AVMEDIA_TYPE_AUDIO;
+                audio_codec_ctx->sample_rate = sample_rate;
+                audio_codec_ctx->channels = channels;
+                audio_codec_ctx->channel_layout = av_get_default_channel_layout(audio_codec_ctx->channels);
+                audio_codec_ctx->sample_fmt = AV_SAMPLE_FMT_FLTP;  // AAC编码需要浮点格式
+                audio_codec_ctx->time_base = (AVRational){1, sample_rate};
+                audio_codec_ctx->bit_rate = bitrate;
+                audio_stream->time_base = audio_codec_ctx->time_base;
+                err::check_bool_raise(avcodec_parameters_from_context(audio_stream->codecpar, audio_codec_ctx) >= 0, "avcodec_parameters_to_context");
+                err::check_bool_raise(avcodec_open2(audio_codec_ctx, audio_codec, NULL) >= 0, "audio_codec open failed");
 
-            swr_ctx = swr_alloc();
-            av_opt_set_int(swr_ctx, "in_channel_layout", audio_codec_ctx->channel_layout, 0);
-            av_opt_set_int(swr_ctx, "out_channel_layout", audio_codec_ctx->channel_layout, 0);
-            av_opt_set_int(swr_ctx, "in_sample_rate", audio_codec_ctx->sample_rate, 0);
-            av_opt_set_int(swr_ctx, "out_sample_rate", audio_codec_ctx->sample_rate, 0);
-            av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", format, 0);
-            av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_FLTP, 0);
-            swr_init(swr_ctx);
+                swr_ctx = swr_alloc();
+                av_opt_set_int(swr_ctx, "in_channel_layout", audio_codec_ctx->channel_layout, 0);
+                av_opt_set_int(swr_ctx, "out_channel_layout", audio_codec_ctx->channel_layout, 0);
+                av_opt_set_int(swr_ctx, "in_sample_rate", audio_codec_ctx->sample_rate, 0);
+                av_opt_set_int(swr_ctx, "out_sample_rate", audio_codec_ctx->sample_rate, 0);
+                av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", format, 0);
+                av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", AV_SAMPLE_FMT_FLTP, 0);
+                swr_init(swr_ctx);
 
-            int frame_size = audio_codec_ctx->frame_size;
-            audio_frame = av_frame_alloc();
-            audio_frame->nb_samples = frame_size;
-            audio_frame->channel_layout = audio_codec_ctx->channel_layout;
-            audio_frame->format = AV_SAMPLE_FMT_FLTP;
-            audio_frame->sample_rate = audio_codec_ctx->sample_rate;
-            av_frame_get_buffer(audio_frame, 0);
+                int frame_size = audio_codec_ctx->frame_size;
+                audio_frame = av_frame_alloc();
+                audio_frame->nb_samples = frame_size;
+                audio_frame->channel_layout = audio_codec_ctx->channel_layout;
+                audio_frame->format = AV_SAMPLE_FMT_FLTP;
+                audio_frame->sample_rate = audio_codec_ctx->sample_rate;
+                av_frame_get_buffer(audio_frame, 0);
+            }
 
             err::check_bool_raise(avformat_write_header(outputFormatContext, NULL) >= 0, "avformat_write_header failed!");
 
@@ -425,21 +506,24 @@ namespace maix::video
             param->frame_index = 0;
             param->last_encode_ms = time::ticks_ms();
             param->video_packet_list = new std::list<AVPacket *>;
+
+            bool is_raw_h264 = _path.find(".h264") != std::string::npos;
+            bool is_raw_h265 = _path.find(".h265") != std::string::npos;
+
             switch (video_type) {
                 case VIDEO_H264:
                     param->copy_sps_pps_per_iframe = true;
                     break;
-                case VIDEO_H264_MP4:
-                    param->copy_sps_pps_per_iframe = false;
+                case VIDEO_H264_CBR:
+                case VIDEO_H264_VBR:
+                    param->copy_sps_pps_per_iframe = is_raw_h264 ? true : false;
                     break;
-                case VIDEO_H264_FLV:
-                    param->copy_sps_pps_per_iframe = false;
-                break;
                 case VIDEO_H265:
                     param->copy_sps_pps_per_iframe = true;
                     break;
-                case VIDEO_H265_MP4:
-                    param->copy_sps_pps_per_iframe = false;
+                case VIDEO_H265_CBR:
+                case VIDEO_H265_VBR:
+                    param->copy_sps_pps_per_iframe = is_raw_h265 ? true : false;
                     break;
                 default:
                     err::check_raise(err::ERR_RUNTIME, "Unsupported video type!");
@@ -465,12 +549,16 @@ namespace maix::video
         if (_path.size() == 0) {
             switch (_type) {
             case VIDEO_H264:
+            case VIDEO_H264_CBR:
+            case VIDEO_H264_VBR:
             {
                 mmf_del_venc_channel(MMF_VENC_CHN);
                 mmf_deinit_v2(false);
                 break;
             }
             case VIDEO_H265:
+            case VIDEO_H265_CBR:
+            case VIDEO_H265_VBR:
             {
                 mmf_del_venc_channel(MMF_VENC_CHN);
                 mmf_deinit_v2(false);
@@ -550,6 +638,8 @@ namespace maix::video
 
             switch (_type) {
             case VIDEO_H264:
+            case VIDEO_H264_CBR:
+            case VIDEO_H264_VBR:
             {
                 if (img && img->data() != NULL) {  // encode from image
                     if (img->data_size() > 2560 * 1440 * 3 / 2) {
@@ -768,6 +858,8 @@ namespace maix::video
                 break;
             }
             case VIDEO_H265:
+            case VIDEO_H265_CBR:
+            case VIDEO_H265_VBR:
             {
                 if (img && img->data() != NULL) {  // encode from image
                     if (img->data_size() > 2560 * 1440 * 3 / 2) {
@@ -967,6 +1059,8 @@ namespace maix::video
 
             switch (_type) {
             case VIDEO_H264:
+            case VIDEO_H264_CBR:
+            case VIDEO_H264_VBR:
             {
                 if (_block) {
                     if (use_input_img) {
@@ -4031,21 +4125,24 @@ _exit:
         packager->find_sps_pps = false;
         packager->frame_index = 0;
         packager->last_encode_ms = time::ticks_ms();
+
+        bool is_raw_h264 = path.find(".h264") != std::string::npos;
+        bool is_raw_h265 = path.find(".h265") != std::string::npos;
+
         switch (video_type) {
             case VIDEO_H264:
                 packager->copy_sps_pps_per_iframe = true;
                 break;
-            case VIDEO_H264_MP4:
-                packager->copy_sps_pps_per_iframe = false;
+            case VIDEO_H264_CBR:
+            case VIDEO_H264_VBR:
+                packager->copy_sps_pps_per_iframe = is_raw_h264 ? true : false;
                 break;
-            case VIDEO_H264_FLV:
-                packager->copy_sps_pps_per_iframe = false;
-            break;
             case VIDEO_H265:
                 packager->copy_sps_pps_per_iframe = true;
                 break;
-            case VIDEO_H265_MP4:
-                packager->copy_sps_pps_per_iframe = false;
+            case VIDEO_H265_CBR:
+            case VIDEO_H265_VBR:
+                packager->copy_sps_pps_per_iframe = is_raw_h265 ? true : false;
                 break;
             default:
                 err::check_raise(err::ERR_RUNTIME, "Unsupported video type!");
