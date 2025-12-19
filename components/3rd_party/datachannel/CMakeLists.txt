@@ -4,11 +4,10 @@ if(CONFIG_LIBDATACHANNEL_COMPILE_FROM_SOURCE)
     set(compile_from_src 1)
 endif()
 
-set(libdatachannel_version_str "${CONFIG_LIBDATACHANNEL_VERSION_MAJOR}.${CONFIG_LIBDATACHANNEL_VERSION_MINOR}.${CONFIG_LIBDATACHANNEL_VERSION_PATCH}")
-set(srcs_path "${DL_EXTRACTED_PATH}/libdatachannel_srcs/libdatachannel-${libdatachannel_version_str}")
-list(APPEND ADD_INCLUDE "${srcs_path}/include" ".")
-
 if (compile_from_src)
+    set(libdatachannel_version_str "${CONFIG_LIBDATACHANNEL_VERSION_MAJOR}.${CONFIG_LIBDATACHANNEL_VERSION_MINOR}.${CONFIG_LIBDATACHANNEL_VERSION_PATCH}")
+    set(srcs_path "${DL_EXTRACTED_PATH}/libdatachannel_srcs/libdatachannel-${libdatachannel_version_str}")
+    list(APPEND ADD_INCLUDE "${srcs_path}/include" ".")
     list(APPEND ADD_PRIVATE_INCLUDE "${srcs_path}/include/rtc" "${srcs_path}/src")
 
     if(PLATFORM_MAIXCAM)
@@ -22,6 +21,7 @@ if (compile_from_src)
 
     register_component(DYNAMIC)
 else()
+    list(APPEND ADD_INCLUDE "include" ".")
     list(APPEND ADD_REQUIREMENTS json cpp-httplib)
     if (PLATFORM_MAIXCAM)
         list(APPEND ADD_DYNAMIC_LIB "lib/maixcam/libdatachannel.so")
