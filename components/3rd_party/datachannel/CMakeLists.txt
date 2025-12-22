@@ -8,7 +8,7 @@ if (compile_from_src)
     set(libdatachannel_version_str "${CONFIG_LIBDATACHANNEL_VERSION_MAJOR}.${CONFIG_LIBDATACHANNEL_VERSION_MINOR}.${CONFIG_LIBDATACHANNEL_VERSION_PATCH}")
     set(srcs_path "${DL_EXTRACTED_PATH}/libdatachannel_srcs/libdatachannel-${libdatachannel_version_str}")
     list(APPEND ADD_INCLUDE "${srcs_path}/include" ".")
-    list(APPEND ADD_PRIVATE_INCLUDE "${srcs_path}/include/rtc" "${srcs_path}/src")
+    list(APPEND ADD_PRIVATE_INCLUDE "${srcs_path}/include" "${srcs_path}/src")
 
     if(PLATFORM_MAIXCAM)
     list(APPEND ADD_SRCS  "private/atomic.cpp")

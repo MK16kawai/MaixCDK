@@ -152,6 +152,8 @@ namespace maix::audio
         FILE *file = nullptr;
         wav_header_t wav_header;
         bool block;
+
+        double volume_scale;
     } audio_param_t;
 
     enum pcm_format to_tinyalsa_format(audio::Format format) {
@@ -289,6 +291,9 @@ namespace maix::audio
             }
         }
 
+        param->volume_scale = atof(app::get_sys_config_kv("audio", "input_volume_scale", "1.0").c_str());
+        param->volume_scale = param->volume_scale > 1.0 ? 1.0 : param->volume_scale;
+        param->volume_scale = param->volume_scale < 0.01 ? 0.01 : param->volume_scale;
         _param = param;
     }
 
@@ -348,6 +353,7 @@ namespace maix::audio
         if (!mixer) {
             err::check_raise(err::ERR_RUNTIME, "Open mixer failed");
         }
+        value = value * param->volume_scale;
 
         auto ctl = mixer_get_ctl_by_name_and_device(mixer, "ADC Capture Volume", param->device);
         if (!ctl) {
@@ -369,7 +375,7 @@ namespace maix::audio
 
             curr_volume = dist_volume;
         }
-
+        curr_volume = (int)((double)curr_volume / param->volume_scale);
         mixer_close(mixer);
         return curr_volume;
     }
@@ -672,6 +678,10 @@ namespace maix::audio
             pcm_close(param->pcm);
             err::check_raise(err::ERR_RUNTIME, "failed to open PCM");
         }
+
+        param->volume_scale = atof(app::get_sys_config_kv("audio", "output_volume_scale", "1.0").c_str());
+        param->volume_scale = param->volume_scale > 1.0 ? 1.0 : param->volume_scale;
+        param->volume_scale = param->volume_scale < 0.01 ? 0.01 : param->volume_scale;
         _param = param;
     }
 
@@ -706,6 +716,7 @@ namespace maix::audio
             err::check_raise(err::ERR_RUNTIME, "Get mixer volume ctl failed");
         }
 
+        value = value * param->volume_scale;
         auto num_values = mixer_ctl_get_num_values(ctl);
         auto curr_volume = mixer_ctl_get_percent(ctl, 0);
         curr_volume = 100 - curr_volume;
@@ -722,7 +733,7 @@ namespace maix::audio
 
             curr_volume = 100 - dist_volume;
         }
-
+        curr_volume = (int)((double)curr_volume / param->volume_scale);
         mixer_close(mixer);
         return curr_volume;
     }

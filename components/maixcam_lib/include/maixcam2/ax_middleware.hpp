@@ -1271,37 +1271,67 @@ namespace maix::middleware::maixcam2 {
         return 0;
     }
 
-    static SAMPLE_VIN_CASE_E __get_vi_case(char *sensor_name, int w = -1, int h = -1, int fps = 30) {
+    static SAMPLE_VIN_CASE_E __get_vi_case(char *sensor_name, int &w, int &h, int &fps) {
         if (strcmp(sensor_name, "os04a10") == 0) {
+            w = 2688;
+            h = 1520;
+            fps = 30;
             return SAMPLE_VIN_SINGLE_OS04A10;
         } else if (strcmp(sensor_name, "sc450ai") == 0) {
+            w = 2688;
+            h = 1520;
+            fps = 30;
             return SAMPLE_VIN_SINGLE_SC450AI;
         } else if (strcmp(sensor_name, "sc850sl") == 0) {
             if (w == -1 || h == -1) {
+                w = 3840;
+                h = 2160;
+                fps = 30;
                 return SAMPLE_VIN_SINGLE_SC850SL;
             }
 
             if (fps > 30 || fps <= 0) {
                 if (w > 1920 || h > 1080) {
+                    w = 3840;
+                    h = 2160;
+                    fps = 30;
                     return SAMPLE_VIN_SINGLE_SC850SL;
                 } else {
+                    w = 1920;
+                    h = 1080;
+                    fps = 60;
                     return SAMPLE_VIN_SINGLE_SC850SL_1080P60;
                 }
             } else {
+                w = 3840;
+                h = 2160;
+                fps = 30;
                 return SAMPLE_VIN_SINGLE_SC850SL;
             }
         } else if (strcmp(sensor_name, "os04d10") == 0) {
             if (w == -1 || h == -1) {
+                w = 2560;
+                h = 1440;
+                fps = 30;
                 return SAMPLE_VIN_SINGLE_OS04D10;
             }
 
             if (fps > 30 || fps <= 0) {
                 if (w > 1280 || h > 720) {
+                    w = 2560;
+                    h = 1440;
+                    fps = 30;
                     return SAMPLE_VIN_SINGLE_OS04D10;
                 } else {
+                    w = 1280;
+                    h = 720;
+                    fps = 60;
                     return SAMPLE_VIN_SINGLE_OS04D10_720P60;
                 }
             } else {
+                w = 2560;
+                h = 1440;
+                fps = 30;
                 return SAMPLE_VIN_SINGLE_OS04D10;
             }
         } else {
@@ -1485,7 +1515,9 @@ namespace maix::middleware::maixcam2 {
                     log::error("get sensor name failed");
                     return err::ERR_RUNTIME;
                 }
-                tVinParam.eSysCase = __get_vi_case((char *)get_sensor_res.second.c_str());
+
+                int w = -1, h = -1, fps = 30;
+                tVinParam.eSysCase = __get_vi_case((char *)get_sensor_res.second.c_str(), w, h, fps);
 
                 // check if enable ai-isp
                 AX_BOOL ai_isp_on = app::get_sys_config_kv("npu", "ai_isp", "1") == "1" ? AX_TRUE : AX_FALSE;
@@ -1601,7 +1633,7 @@ namespace maix::middleware::maixcam2 {
             return __get_sensor_name();
         }
 
-        SAMPLE_VIN_CASE_E get_vi_case(char *sensor_name, int w, int h, int fps) {
+        SAMPLE_VIN_CASE_E get_vi_case(char *sensor_name, int &w, int &h, int &fps) {
             return __get_vi_case(sensor_name, w, h, fps);
         }
 

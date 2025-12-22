@@ -241,6 +241,8 @@ namespace maix::audio
 
         int user_period_size;
         int user_period_count;
+
+        double volume_scale;
     } audio_param_t;
 
     static AX_AUDIO_BIT_WIDTH_E __maix_to_ax_fmt(audio::Format format) {
@@ -346,6 +348,10 @@ namespace maix::audio
             delete param;
             err::check_raise(ret, "initializing AudioIn failed");
         }
+
+        param->volume_scale = atof(app::get_sys_config_kv("audio", "input_volume_scale", "1.0").c_str());
+        param->volume_scale = param->volume_scale > 1.0 ? 1.0 : param->volume_scale;
+        param->volume_scale = param->volume_scale < 0.01 ? 0.01 : param->volume_scale;
         _param = param;
 
         int new_volume = atoi(app::get_sys_config_kv("audio", "input_volume", "-1").c_str());
@@ -408,10 +414,13 @@ namespace maix::audio
 
     int Recorder::volume(int value) {
         audio_param_t *param = (audio_param_t *)_param;
+        value = value * param->volume_scale;
+
         if (param->ax_ai) {
             auto f_value = __volume_int_to_float(value);
             auto new_volume = param->ax_ai->volume(f_value);
             auto new_volume_int = __volume_float_to_int(new_volume);
+            new_volume_int = (int)((double)new_volume_int / param->volume_scale);
             if (value >= 0) {
                 app::set_sys_config_kv("audio", "input_volume", std::to_string(new_volume_int));
             }
@@ -799,6 +808,9 @@ namespace maix::audio
         auto ringbuffer_size = pcm_frame_to_bytes(param->channels, param->bits, period_size)* period_count;
         param->ring_buffer = std::make_unique<RingBuffer>(ringbuffer_size);
         param->thread_handle = std::make_unique<std::thread>(player_thread, param);
+        param->volume_scale = atof(app::get_sys_config_kv("audio", "output_volume_scale", "1.0").c_str());
+        param->volume_scale = param->volume_scale > 1.0 ? 1.0 : param->volume_scale;
+        param->volume_scale = param->volume_scale < 0.01 ? 0.01 : param->volume_scale;
         _param = param;
 
         int new_volume = atoi(app::get_sys_config_kv("audio", "output_volume", "-1").c_str());
@@ -841,10 +853,12 @@ namespace maix::audio
 
     int Player::volume(int value) {
         audio_param_t *param = (audio_param_t *)_param;
+        value = value * param->volume_scale;
         if (param->ax_ao) {
             auto f_value = __volume_int_to_float(value);
             auto new_volume = param->ax_ao->volume(f_value);
             auto new_volume_int = __volume_float_to_int(new_volume);
+            new_volume_int = (int)((double)new_volume_int / param->volume_scale);
             if (value >= 0) {
                 app::set_sys_config_kv("audio", "output_volume", std::to_string(new_volume_int));
             }
