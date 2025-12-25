@@ -374,7 +374,8 @@ namespace maix::display
                 if (pool_id != AX_INVALID_POOLID) {
                     ret = AX_POOL_DestroyPool(pool_id);
                     if (ret != 0) {
-                        log::info("AX_POOL_DestroyPool failed, PoolId = 0x%d, ret:%#xn", pool_id, ret);
+                        // do nothing
+                        // log::info("AX_POOL_DestroyPool failed, PoolId = 0x%d, ret:%#x", pool_id, ret);
                     }
                 }
                 return ret;
@@ -403,11 +404,11 @@ namespace maix::display
             err::Err reset(int size, int count) {
                 err::Err ret = err::ERR_NONE;
                 if (size != _pool_size || count != _pool_count) {
-                    if ((ret = deinit()) == err::ERR_NONE) {
+                    if ((ret = deinit()) != err::ERR_NONE) {
                         return ret;
                     }
 
-                    if ((ret = init(size, count)) == err::ERR_NONE) {
+                    if ((ret = init(size, count)) != err::ERR_NONE) {
                         return ret;
                     }
                 }

@@ -203,9 +203,9 @@
                 std::vector<int>         {6, 2}
             }
         },
-        {"C2", // GPIO3_A2
+        {"D2", // GPIO3_A2
             PinInfo {
-                std::vector<std::string> {"GPIOC2"}, // boot/user key
+                std::vector<std::string> {"GPIOD2"}, // boot/user key
                 PinRegInfo               {0x02302024, 16, 3},
                 std::vector<int>         {0}
             }
