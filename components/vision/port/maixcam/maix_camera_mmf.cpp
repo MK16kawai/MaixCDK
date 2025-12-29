@@ -309,6 +309,9 @@ _retry:
         for (size_t i = 0; i < addr_list.size(); i++) {
             // log::info("i2c4 addr: 0x%02x", addr_list[i]);
             switch (addr_list[i]) {
+                case 0x21:
+                    snprintf(name, sizeof(name), "gcore_gc030a");
+                    return {true, name};
                 case 0x29:
                     // log::info("find gcore_gc4653, addr %#x", addr_list[i]);
                     snprintf(name, sizeof(name), "gcore_gc4653");
@@ -387,6 +390,8 @@ _retry:
         std::vector<int> addr_list = i2c_obj.scan();
         for (size_t i = 0; i < addr_list.size(); i++) {
             switch (addr_list[i]) {
+                case 0x21: // gcore_gc030a
+                    return {640, 480};
                 case 0x29:  // gcore_gc4653
                     return {2560, 1440};
                 case 0x30:  // sms_sc035gs
@@ -588,6 +593,16 @@ _retry:
                 vi_format = PIXEL_FORMAT_NV21;
                 vi_vpss_format = PIXEL_FORMAT_NV21;
                 err::check_bool_raise(!CVI_BIN_SetBinName(WDR_MODE_NONE, "/mnt/cfg/param/cvi_sdr_bin.gc02m1"), "set config path failed!");
+            } else if (!strcmp(sensor_name, "gcore_gc030a")) {
+                sensor_cfg.sns_type = GCORE_GC030A_MIPI_480P_30FPS_10BIT;
+                sensor_cfg.lane_id = {0, 1, -1, -1, -1};
+                sensor_cfg.pn_swap = {1, 1, 0, 0, 0};
+                sensor_cfg.mclk_en = 1;
+                sensor_cfg.i2c_addr = 0x21;
+                sensor_cfg.exptime_max = 363636;
+                sensor_cfg.exptime_min = 33333;
+                vi_format = PIXEL_FORMAT_NV21;
+                vi_vpss_format = PIXEL_FORMAT_NV21;
             } else { // default is gcore_gc4653
                 if (width <= 1280 && height <= 720 && fps > 30) {
                     sensor_cfg.sns_type = GCORE_GC4653_MIPI_720P_60FPS_10BIT;
@@ -662,6 +677,16 @@ _retry:
                 vi_format = PIXEL_FORMAT_NV21;
                 vi_vpss_format = PIXEL_FORMAT_NV21;
                 err::check_bool_raise(!CVI_BIN_SetBinName(WDR_MODE_NONE, "/mnt/cfg/param/cvi_sdr_bin.gc02m1"), "set config path failed!");
+            } else if (!strcmp(sensor_name, "gcore_gc030a")) {
+                sensor_cfg.sns_type = GCORE_GC030A_MIPI_480P_30FPS_10BIT;
+                sensor_cfg.lane_id = {4, 3, -1, -1, -1};
+                sensor_cfg.pn_swap = {0, 0, 0, 0, 0};
+                sensor_cfg.mclk_en = 1;
+                sensor_cfg.i2c_addr = 0x21;
+                sensor_cfg.exptime_max = 363636;
+                sensor_cfg.exptime_min = 33333;
+                vi_format = PIXEL_FORMAT_NV21;
+                vi_vpss_format = PIXEL_FORMAT_NV21;
             } else { // default is gcore_gc4653
                 if (width <= 1280 && height <= 720 && fps > 30) {
                     sensor_cfg.sns_type = GCORE_GC4653_MIPI_720P_60FPS_10BIT;

@@ -57,6 +57,7 @@ sensor-$(CONFIG_SENSOR_BRIGATES_BG0808)      += brigates_bg0808
 sensor-$(CONFIG_SENSOR_CVSENS_CV4001)		 += cvsens_cv4001
 sensor-$(CONFIG_SENSOR_BYD_BF2253L)          += byd_bf2253l
 sensor-$(CONFIG_SENSOR_GCORE_GC02M1)         += gcore_gc02m1
+sensor-$(CONFIG_SENSOR_GCORE_GC030A)         += gcore_gc030a
 sensor-$(CONFIG_SENSOR_GCORE_GC0312)         += gcore_gc0312
 sensor-$(CONFIG_SENSOR_GCORE_GC0329)         += gcore_gc0329
 sensor-$(CONFIG_SENSOR_GCORE_GC1054)         += gcore_gc1054
