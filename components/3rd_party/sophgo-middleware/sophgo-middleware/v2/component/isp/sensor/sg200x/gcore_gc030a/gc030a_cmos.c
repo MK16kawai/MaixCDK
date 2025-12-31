@@ -183,6 +183,7 @@ static CVI_S32 sensor_rx_attr(VI_PIPE ViPipe, SNS_COMBO_DEV_ATTR_S *pstRxAttr)
 static CVI_S32 sensor_patch_rx_attr(RX_INIT_ATTR_S *pstRxInitAttr)
 {
 	SNS_COMBO_DEV_ATTR_S *pstRxAttr = &gc030a_rx_attr;
+	int i;
 
 	CMOS_CHECK_POINTER(pstRxInitAttr);
 
@@ -193,6 +194,22 @@ static CVI_S32 sensor_patch_rx_attr(RX_INIT_ATTR_S *pstRxInitAttr)
 		return CVI_SUCCESS;
 
 	pstRxAttr->devno = pstRxInitAttr->MipiDev;
+
+	if (pstRxAttr->input_mode == INPUT_MODE_MIPI) {
+		struct mipi_dev_attr_s *attr = &pstRxAttr->mipi_attr;
+
+		for (i = 0; i < MIPI_LANE_NUM + 1; i++) {
+			attr->lane_id[i] = pstRxInitAttr->as16LaneId[i];
+			attr->pn_swap[i] = pstRxInitAttr->as8PNSwap[i];
+		}
+	} else {
+		struct lvds_dev_attr_s *attr = &pstRxAttr->lvds_attr;
+
+		for (i = 0; i < MIPI_LANE_NUM + 1; i++) {
+			attr->lane_id[i] = pstRxInitAttr->as16LaneId[i];
+			attr->pn_swap[i] = pstRxInitAttr->as8PNSwap[i];
+		}
+	}
 
 	return CVI_SUCCESS;
 }
