@@ -9,6 +9,7 @@
 #include "maix_basic.hpp"
 #include "maix_image.hpp"
 #include "maix_llm_qwen.hpp"
+#include "maix_nn.hpp"
 
 namespace maix::nn
 {
@@ -326,6 +327,8 @@ namespace maix::nn
         std::string _tokenizer_type;
         std::function<void(Qwen3VL &, const Qwen3VLResp &)> _callback = nullptr;
         void *_data; // for implementation
+
+        err::Err create_environment_file(nn::MUD &mud);
     };
 
 }

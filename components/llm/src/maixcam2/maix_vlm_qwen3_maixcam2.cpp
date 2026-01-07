@@ -87,6 +87,53 @@
         }
     }
 
+    err::Err Qwen3VL::create_environment_file(nn::MUD &mud)
+    {
+        auto configs = mud.items;
+        auto work_dir = fs::dirname(mud.model_path);
+        auto path = fs::join({work_dir, configs["extra"]["service_env_path"]});
+        auto exec_app_path = fs::join({work_dir, configs["extra"]["exec_app"]});
+        auto template_filename = fs::join({work_dir, configs["basic"]["model_npu"]});
+        auto model_num = configs["extra"]["model_num"];
+        auto encoder_model_path = fs::join({work_dir, configs["extra"]["vpm_resampler_model"]});
+        auto use_mmap_load_embed = configs["extra"]["use_mmap_load_embed"];
+        auto tokenizer_url = configs["extra"]["tokenizer_url"];
+        auto post_model_path = fs::join({work_dir, configs["extra"]["post_model"]});
+        auto tokens_embed_path = fs::join({work_dir, configs["extra"]["tokens_embed"]});
+        auto tokens_embed_num = configs["extra"]["tokens_embed_num"];
+        auto tokens_embed_size = configs["extra"]["tokens_embed_size"];
+        auto patch_size = configs["extra"]["patch_size"];
+        auto img_width = configs["extra"]["img_w"];
+        auto img_height = configs["extra"]["img_h"];
+        auto vision_start_token_id = configs["extra"]["vision_start_token_id"];
+        auto post_config_path = fs::join({work_dir, configs["extra"]["post_config_path"]});
+
+        auto f = fs::open(path, "w+");
+        if (!f) {
+            log::error("open qwen3_vl.service.env failed");
+            return err::ERR_RUNTIME;
+        }
+        f->write("WORK_DIR=" + work_dir + "\n");
+        f->write("MAIN_API=" + exec_app_path + "\n");
+        f->write("TEMPLATE_FILENAME_AXMODEL=" + template_filename + "\n");
+        f->write("AXMODEL_NUM=" + model_num + "\n");
+        f->write("ENCODER_MODEL_PATH=" + encoder_model_path + "\n");
+        f->write("USE_MMAP_LOAD_EMBED=" + use_mmap_load_embed + "\n");
+        f->write("TOKENIZER_URL=" + tokenizer_url + "\n");
+        f->write("POST_MODEL_PATH=" + post_model_path + "\n");
+        f->write("TOKENS_EMBED_PATH=" + tokens_embed_path + "\n");
+        f->write("TOKENS_EMBED_NUM=" + tokens_embed_num + "\n");
+        f->write("TOKENS_EMBED_SIZE=" + tokens_embed_size + "\n");
+        f->write("PATCH_SIZE=" + patch_size + "\n");
+        f->write("IMG_WIDTH=" + img_width + "\n");
+        f->write("IMG_HEIGHT=" + img_height + "\n");
+        f->write("VISION_START_TOKEN_ID=" + vision_start_token_id + "\n");
+        f->write("POST_CONFIG_PATH=" + post_config_path + "\n");
+
+        f->close();
+        return err::ERR_NONE;
+    }
+
     err::Err Qwen3VL::load(const std::string &model)
     {
         Qwen3VLObj *obj = (Qwen3VLObj *)_data;
@@ -100,6 +147,13 @@
         err::Err e = obj->mud.load(model);
         if(e != err::ERR_NONE)
             return e;
+
+        e = this->create_environment_file(obj->mud);
+        if(e != err::ERR_NONE) {
+            log::error("create environment file failed, err:%d", e);
+            return e;
+        }
+
         std::string model_dir = fs::dirname(model);
         // init llm model
         VLM_Qwen3::LLMAttrType attr;
@@ -137,15 +191,18 @@
         }
         try
         {
-            post_config.enable_temperature = obj->mud.items["post_config"]["enable_temperature"] == "true" ? true : false;
-            post_config.temperature = std::stof(obj->mud.items["post_config"]["temperature"]);
-            post_config.enable_repetition_penalty = obj->mud.items["post_config"]["enable_repetition_penalty"] == "true" ? true : false;
-            post_config.repetition_penalty = std::stof(obj->mud.items["post_config"]["repetition_penalty"]);
-            post_config.penalty_window = std::stoi(obj->mud.items["post_config"]["penalty_window"]);
-            post_config.enable_top_p_sampling = obj->mud.items["post_config"]["enable_top_p_sampling"] == "true" ? true : false;
-            post_config.top_p = std::stof(obj->mud.items["post_config"]["top_p"]);
-            post_config.enable_top_k_sampling = obj->mud.items["post_config"]["enable_top_k_sampling"] == "true" ? true : false;
-            post_config.top_k = std::stoi(obj->mud.items["post_config"]["top_k"]);
+            auto post_config_file = fs::join({model_dir, obj->mud.items["extra"]["post_config_path"]});
+            std::ifstream file(post_config_file);
+            nlohmann::json config = nlohmann::json::parse(file);
+            post_config.enable_temperature = config.value("enable_temperature", true);
+            post_config.temperature = config.value("temperature", 0.7f);
+            post_config.enable_repetition_penalty = config.value("enable_repetition_penalty", false);
+            post_config.repetition_penalty = config.value("repetition_penalty", 1.0f);
+            post_config.penalty_window = config.value("penalty_window", 30);
+            post_config.enable_top_p_sampling = config.value("enable_top_p_sampling", false);
+            post_config.top_p = config.value("top_p", 0.8f);
+            post_config.enable_top_k_sampling = config.value("enable_top_k_sampling", true);
+            post_config.top_k = config.value("top_k", 20);
         }
         catch(...)
         {

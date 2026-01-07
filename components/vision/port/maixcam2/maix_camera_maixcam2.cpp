@@ -13,8 +13,6 @@
 #include <dirent.h>
 #include "ax_middleware.hpp"
 
-#define AX_NT_ENABLE        (0)
-
 using namespace maix;
 using namespace maix::middleware::maixcam2;
 #define ALIGN_UP_2(value) ((value + 0x1) & (~0x1))
@@ -599,12 +597,16 @@ namespace maix::camera
             log::warn("Height %d is not aligned to 2, will be set to %d", width_tmp, ALIGN_UP_2(height_tmp));
         }
 
-#if AX_NT_ENABLE
-        auto axRet = COMMON_NT_Init(6000, 8082);
-        if (axRet) {
-            printf("COMMON_NT_Init fail, ret:0x%x\r\n", axRet);
+        auto camera_nt = app::get_sys_config_kv("camera", "nt", "0") == "1" ? AX_TRUE : AX_FALSE;
+        if (camera_nt) {
+            auto camera_nt_stream_port = atoi(app::get_sys_config_kv("camera", "nt_stream_port", "6000").c_str());
+            auto camera_nt_ctrl_port = atoi(app::get_sys_config_kv("camera", "nt_ctrl_port", "8082").c_str());
+            auto axRet = COMMON_NT_Init(camera_nt_stream_port, camera_nt_ctrl_port);
+            if (axRet) {
+                printf("COMMON_NT_Init fail, ret:0x%x\r\n", axRet);
+            }
         }
-#endif
+
         this->vflip(priv->chn.vflip);
         this->hmirror(priv->chn.mirror);
         return err::ERR_NONE;
