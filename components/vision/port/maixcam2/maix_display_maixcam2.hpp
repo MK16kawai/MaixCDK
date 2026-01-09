@@ -723,10 +723,10 @@ namespace maix::display
                     input_img_h = input_img_h / scale;
                     input_img_w = ((input_img_w + 16) >> 4 )<< 4;
                     input_img_h = ((input_img_h + 2) >> 1 )<< 1;
-                    input_img = img.resize(input_img_w, input_img_h, fit);
+                    input_img = img.resize(input_img_w, input_img_h);
                     // log::info("resize %dx%d to %dx%d", img.width(), img.height(), input_img_w, input_img_h);
                 } else {
-                    input_img = img.resize(input_img_w, input_img_h, fit);
+                    input_img = img.resize(input_img_w, input_img_h);
                     // log::info("resize %dx%d to %dx%d", img.width(), img.height(), input_img_w, input_img_h);
                 }
                 if (input_img == nullptr) {
